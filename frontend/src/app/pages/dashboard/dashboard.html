@@ -1,0 +1,185 @@
+<h1>Dashboard</h1>
+
+@if (data(); as d) {
+  <div class="grid">
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>Watchlist</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        @if (d.watchlist.length) {
+          <table mat-table [dataSource]="d.watchlist" class="full-width">
+            <ng-container matColumnDef="ticker">
+              <th mat-header-cell *matHeaderCellDef>Ticker</th>
+              <td mat-cell *matCellDef="let item">
+                <a [routerLink]="['/assets', item.asset.ticker]">{{ item.asset.ticker }}</a>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="name">
+              <th mat-header-cell *matHeaderCellDef>Name</th>
+              <td mat-cell *matCellDef="let item">{{ item.asset.name }}</td>
+            </ng-container>
+            <ng-container matColumnDef="latest_close">
+              <th mat-header-cell *matHeaderCellDef>Latest close</th>
+              <td mat-cell *matCellDef="let item">
+                {{ item.latest_close != null ? (item.latest_close | number: '1.2-2') : '—' }}
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="change_pct">
+              <th mat-header-cell *matHeaderCellDef>Change</th>
+              <td
+                mat-cell
+                *matCellDef="let item"
+                [class.positive]="(item.change_pct ?? 0) > 0"
+                [class.negative]="(item.change_pct ?? 0) < 0"
+              >
+                @if (item.change_pct != null) {
+                  {{ item.change_pct > 0 ? '+' : '' }}{{ item.change_pct | number: '1.2-2' }}%
+                } @else {
+                  —
+                }
+              </td>
+            </ng-container>
+            <tr mat-header-row *matHeaderRowDef="watchlistColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: watchlistColumns"></tr>
+          </table>
+        } @else {
+          <p class="empty">Watchlist is empty. Add assets from their detail pages.</p>
+        }
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>Asset Explorer</mat-card-title>
+        <mat-card-subtitle>Browse the full asset universe by class.</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        @if (assetGroups().length) {
+          <mat-accordion multi>
+            @for (group of assetGroups(); track group.type) {
+              <mat-expansion-panel>
+                <mat-expansion-panel-header>
+                  <mat-panel-title>
+                    <mat-icon>{{ group.icon }}</mat-icon>
+                    {{ group.label }}
+                  </mat-panel-title>
+                  <mat-panel-description>{{ group.assets.length }} assets</mat-panel-description>
+                </mat-expansion-panel-header>
+                <mat-list>
+                  @for (asset of group.assets; track asset.id) {
+                    <a mat-list-item [routerLink]="['/assets', asset.ticker]">
+                      <span matListItemTitle>{{ asset.ticker }} — {{ asset.name }}</span>
+                      <span matListItemMeta class="asset-badges">
+                        @if (asset.region) {
+                          <mat-chip>{{ asset.region }}</mat-chip>
+                        }
+                        @if (asset.leverage !== 1) {
+                          <mat-chip class="leverage-chip" highlighted>{{ asset.leverage }}x</mat-chip>
+                        }
+                      </span>
+                    </a>
+                  }
+                </mat-list>
+              </mat-expansion-panel>
+            }
+          </mat-accordion>
+        } @else {
+          <p class="empty">No assets available.</p>
+        }
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>Upcoming events</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        @if (d.upcoming_events.length) {
+          <mat-list>
+            @for (event of d.upcoming_events; track event.id) {
+              <mat-list-item>
+                <mat-chip matListItemMeta>{{ event.asset_ticker ?? 'MACRO' }}</mat-chip>
+                <span matListItemTitle>{{ event.title }}</span>
+                <span matListItemLine>
+                  {{ event.date | date: 'mediumDate' }} · {{ formatType(event.event_type) }} ·
+                  importance {{ event.importance }}/5
+                </span>
+              </mat-list-item>
+            }
+          </mat-list>
+        } @else {
+          <p class="empty">No upcoming events.</p>
+        }
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>Recent news</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        @if (d.recent_news.length) {
+          <mat-list>
+            @for (article of d.recent_news; track article.id) {
+              <mat-list-item>
+                <span matListItemTitle>
+                  <a [href]="article.url" target="_blank" rel="noopener">{{
+                    article.headline
+                  }}</a>
+                </span>
+                <span matListItemLine>
+                  {{ article.source }} · {{ article.published_at | date: 'medium' }}
+                  @if (article.sentiment != null) {
+                    · sentiment {{ article.sentiment | number: '1.2-2' }}
+                  }
+                </span>
+              </mat-list-item>
+            }
+          </mat-list>
+        } @else {
+          <p class="empty">No recent news.</p>
+        }
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>Active signals</mat-card-title>
+        <mat-card-subtitle
+          >Why each signal fired — always inspect the reasons.</mat-card-subtitle
+        >
+      </mat-card-header>
+      <mat-card-content>
+        @if (d.active_signals.length) {
+          @for (signal of d.active_signals; track signal.id) {
+            <div class="signal">
+              <div class="signal-header">
+                <span class="signal-name">{{ signal.name }}</span>
+                @if (signal.asset_ticker) {
+                  <a [routerLink]="['/assets', signal.asset_ticker]">
+                    <mat-chip>{{ signal.asset_ticker }}</mat-chip>
+                  </a>
+                }
+                <mat-chip [class]="scoreColor(signal)">{{ signal.score }}/100</mat-chip>
+              </div>
+              <mat-progress-bar
+                mode="determinate"
+                [value]="signal.score"
+              ></mat-progress-bar>
+              <ul class="reasons">
+                @for (reason of signal.reasons; track reason) {
+                  <li>{{ reason }}</li>
+                }
+              </ul>
+            </div>
+          }
+        } @else {
+          <p class="empty">No signals right now.</p>
+        }
+      </mat-card-content>
+    </mat-card>
+  </div>
+} @else {
+  <p class="empty"><mat-icon>hourglass_empty</mat-icon> Loading dashboard…</p>
+}

@@ -1,0 +1,174 @@
+@if (asset(); as asset) {
+  <mat-card class="header-card">
+    <mat-card-header>
+      <mat-card-title>{{ asset.name }} ({{ asset.ticker }})</mat-card-title>
+      <mat-card-subtitle>
+        {{ asset.exchange }} · {{ asset.asset_type }}
+        @if (asset.sector) {
+          · {{ asset.sector }}
+        }
+      </mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-actions>
+      <button mat-stroked-button color="primary" (click)="toggleWatchlist()">
+        <mat-icon>{{ asset.in_watchlist ? 'bookmark_remove' : 'bookmark_add' }}</mat-icon>
+        {{ asset.in_watchlist ? 'Remove from watchlist' : 'Add to watchlist' }}
+      </button>
+    </mat-card-actions>
+  </mat-card>
+
+  <mat-card>
+    <mat-card-header>
+      <mat-card-title>Price history (1 year)</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      @if (chartOptions(); as options) {
+        <div echarts [options]="options" class="chart"></div>
+      } @else {
+        <p class="empty">No price data available.</p>
+      }
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card>
+    <mat-card-header>
+      <mat-card-title>Signals</mat-card-title>
+      <mat-card-subtitle>Why each signal fired — always inspect the reasons.</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      @if (signals().length) {
+        @for (signal of signals(); track signal.id) {
+          <div class="signal">
+            <div class="signal-header">
+              <span class="signal-name">{{ signal.name }}</span>
+              <mat-chip [class]="scoreColor(signal)">{{ signal.score }}/100</mat-chip>
+            </div>
+            <mat-progress-bar mode="determinate" [value]="signal.score"></mat-progress-bar>
+            <ul class="reasons">
+              @for (reason of signal.reasons; track reason) {
+                <li>{{ reason }}</li>
+              }
+            </ul>
+          </div>
+        }
+      } @else {
+        <p class="empty">No active signals for this asset.</p>
+      }
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card>
+    <mat-card-header>
+      <mat-card-title>Events</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      @if (events().length) {
+        <mat-list>
+          @for (event of events(); track event.id) {
+            <mat-list-item>
+              <mat-chip matListItemMeta>{{ formatType(event.event_type) }}</mat-chip>
+              <span matListItemTitle>{{ event.title }}</span>
+              <span matListItemLine>
+                {{ event.date | date: 'mediumDate' }} · importance {{ event.importance }}/5
+              </span>
+              @if (event.description) {
+                <span matListItemLine>{{ event.description }}</span>
+              }
+            </mat-list-item>
+          }
+        </mat-list>
+      } @else {
+        <p class="empty">No events recorded for this asset.</p>
+      }
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card>
+    <mat-card-header>
+      <mat-card-title>News</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      @if (news().length) {
+        <mat-list>
+          @for (article of news(); track article.id) {
+            <mat-list-item>
+              <span matListItemTitle>
+                <a [href]="article.url" target="_blank" rel="noopener">{{ article.headline }}</a>
+              </span>
+              <span matListItemLine>
+                {{ article.source }} · {{ article.published_at | date: 'medium' }}
+                @if (article.sentiment != null) {
+                  · sentiment {{ article.sentiment | number: '1.2-2' }}
+                }
+              </span>
+            </mat-list-item>
+          }
+        </mat-list>
+      } @else {
+        <p class="empty">No news for this asset.</p>
+      }
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card>
+    <mat-card-header>
+      <mat-card-title>Research journal</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      @if (journal().length) {
+        <mat-list>
+          @for (entry of journal(); track entry.id) {
+            <mat-list-item>
+              <span matListItemTitle>{{ entry.thesis }}</span>
+              <span matListItemLine>
+                {{ entry.date | date: 'mediumDate' }} · confidence {{ entry.confidence }}/10
+              </span>
+              @if (entry.expected_outcome) {
+                <span matListItemLine>Expected: {{ entry.expected_outcome }}</span>
+              }
+              @if (entry.risk) {
+                <span matListItemLine>Risk: {{ entry.risk }}</span>
+              }
+            </mat-list-item>
+          }
+        </mat-list>
+      } @else {
+        <p class="empty">No journal entries for this asset yet.</p>
+      }
+
+      <h3>Add entry</h3>
+      <form [formGroup]="form" (ngSubmit)="submitJournal()" class="journal-form">
+        <mat-form-field>
+          <mat-label>Date</mat-label>
+          <input matInput type="date" formControlName="date" />
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Thesis</mat-label>
+          <textarea matInput formControlName="thesis" rows="2" required></textarea>
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Expected outcome</mat-label>
+          <textarea matInput formControlName="expected_outcome" rows="2"></textarea>
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Risk</mat-label>
+          <textarea matInput formControlName="risk" rows="2"></textarea>
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Confidence (1-10)</mat-label>
+          <input matInput type="number" min="1" max="10" formControlName="confidence" />
+        </mat-form-field>
+        <button
+          mat-raised-button
+          color="primary"
+          type="submit"
+          [disabled]="form.invalid || submitting()"
+        >
+          {{ submitting() ? 'Saving…' : 'Add entry' }}
+        </button>
+      </form>
+    </mat-card-content>
+  </mat-card>
+} @else {
+  <p class="empty">Loading asset…</p>
+}

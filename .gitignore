@@ -1,0 +1,21 @@
+# Environment / secrets
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+dev.db
+
+# Node / Angular
+node_modules/
+frontend/dist/
+.angular/
+
+# Editors / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

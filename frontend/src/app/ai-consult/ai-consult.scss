@@ -1,0 +1,67 @@
+h2[mat-dialog-title] {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  mat-icon {
+    color: #f48fb1;
+  }
+}
+
+.full-width {
+  width: 100%;
+}
+
+.actions-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 4px 0 16px;
+}
+
+.prompt-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.85rem;
+}
+
+.prompt-area {
+  background: #0c121b;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 8px;
+  padding: 12px;
+  margin: 0 0 12px;
+  max-height: 260px;
+  overflow: auto;
+  white-space: pre-wrap;
+  font-family: 'Roboto Mono', 'Cascadia Code', Consolas, monospace;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.response-heading {
+  margin: 4px 0;
+  color: #6ec1ff;
+  font-size: 0.95rem;
+}
+
+.response {
+  white-space: pre-wrap;
+  color: rgba(255, 255, 255, 0.85);
+  margin: 0;
+}
+
+.error {
+  color: #f48fb1;
+  margin: 4px 0 0;
+}
+
+.hint {
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.85rem;
+  margin: 4px 0 0;
+}

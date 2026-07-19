@@ -1,0 +1,66 @@
+<h2 mat-dialog-title>
+  <mat-icon>smart_toy</mat-icon>
+  AI Consultant
+</h2>
+
+<mat-dialog-content>
+  <mat-form-field class="full-width">
+    <mat-label>Context</mat-label>
+    <mat-select [value]="ticker()" (selectionChange)="ticker.set($event.value)">
+      <mat-option [value]="null">Portfolio overview</mat-option>
+      @for (asset of assets(); track asset.id) {
+        <mat-option [value]="asset.ticker">{{ asset.ticker }} — {{ asset.name }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field class="full-width">
+    <mat-label>Question (optional)</mat-label>
+    <textarea
+      matInput
+      rows="3"
+      [ngModel]="question()"
+      (ngModelChange)="question.set($event)"
+      placeholder="e.g. Is the supply-risk thesis still supported by the data?"
+    ></textarea>
+  </mat-form-field>
+
+  <div class="actions-row">
+    <button mat-flat-button color="primary" (click)="consult()" [disabled]="loading()">
+      <mat-icon>psychology</mat-icon>
+      {{ status()?.configured ? 'Ask Kimi' : 'Generate prompt' }}
+    </button>
+    @if (loading()) {
+      <mat-spinner diameter="24"></mat-spinner>
+    }
+  </div>
+
+  @if (result(); as r) {
+    <div class="prompt-header">
+      <span>Generated prompt</span>
+      <button mat-stroked-button [cdkCopyToClipboard]="r.prompt" (click)="copied()">
+        <mat-icon>content_copy</mat-icon>
+        Copy prompt
+      </button>
+    </div>
+    <pre class="prompt-area">{{ r.prompt }}</pre>
+
+    @if (r.configured) {
+      @if (r.error) {
+        <p class="error">{{ r.error }}</p>
+      } @else if (r.response) {
+        <h3 class="response-heading">Kimi ({{ r.model }})</h3>
+        <p class="response">{{ r.response }}</p>
+      }
+    } @else {
+      <p class="hint">
+        No API key configured — paste this prompt into your AI chat. Add KIMI_API_KEY to .env to
+        get answers right here.
+      </p>
+    }
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close>Close</button>
+</mat-dialog-actions>

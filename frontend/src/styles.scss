@@ -1,0 +1,63 @@
+// Angular Material M3 dark theme. Single include keeps bundle size down.
+@use '@angular/material' as mat;
+
+html {
+  color-scheme: dark;
+  @include mat.theme(
+    (
+      color: (
+        theme-type: dark,
+        primary: mat.$cyan-palette,
+        tertiary: mat.$rose-palette,
+      ),
+      typography: Roboto,
+      density: 0,
+    )
+  );
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  font-family: Roboto, 'Helvetica Neue', sans-serif;
+}
+
+// Page background: dark slate; text from Material system tokens.
+body {
+  background: #0f1620;
+  color: var(--mat-sys-on-surface);
+}
+
+// Elevated card surfaces, a step lighter than the page, with a thin border.
+.mat-mdc-card {
+  background: #1a2433;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+// Links follow the light-blue accent.
+a {
+  color: #6ec1ff;
+}
+
+// Thin slate scrollbars.
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2b3a4f;
+  border-radius: 6px;
+  border: 2px solid #0f1620;
+
+  &:hover {
+    background: #3a4e68;
+  }
+}

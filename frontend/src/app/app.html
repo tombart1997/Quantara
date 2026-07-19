@@ -1,0 +1,33 @@
+<mat-toolbar class="toolbar">
+  <button mat-icon-button (click)="sidenav.toggle()" aria-label="Toggle navigation">
+    <mat-icon>menu</mat-icon>
+  </button>
+  <span class="app-title">Quantara</span>
+</mat-toolbar>
+
+<mat-sidenav-container class="sidenav-container">
+  <mat-sidenav #sidenav mode="side" opened>
+    <mat-nav-list>
+      @for (item of navItems; track item.route) {
+        <a mat-list-item [routerLink]="item.route" routerLinkActive="active-link">
+          <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
+          <span matListItemTitle>{{ item.label }}</span>
+        </a>
+      }
+    </mat-nav-list>
+  </mat-sidenav>
+
+  <mat-sidenav-content class="content">
+    <router-outlet />
+  </mat-sidenav-content>
+</mat-sidenav-container>
+
+<button
+  mat-fab
+  class="ai-fab"
+  (click)="openAiConsult()"
+  matTooltip="AI Consultant"
+  aria-label="AI Consultant"
+>
+  <mat-icon>smart_toy</mat-icon>
+</button>

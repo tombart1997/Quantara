@@ -1,0 +1,111 @@
+.calendar-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  h1 {
+    margin: 0;
+    min-width: 220px;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.92);
+  }
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 12px 0 16px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.weekday {
+  font-weight: 500;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.5);
+  padding: 4px;
+  text-align: center;
+}
+
+.day-cell {
+  min-height: 90px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 6px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  overflow: hidden;
+  background: #141c28;
+
+  &.blank {
+    border: none;
+    background: transparent;
+  }
+
+  &.today {
+    border-color: #6ec1ff;
+    border-width: 2px;
+  }
+}
+
+.day-number {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.event-chip {
+  font-size: 0.7rem;
+  line-height: 1.2;
+  border-radius: 4px;
+  padding: 2px 4px;
+  color: #101c26;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  strong {
+    margin-right: 3px;
+  }
+}
+
+// Pastel variant per event type (chips and legend dots), dark text for contrast.
+.type-earnings {
+  background-color: #8fbfe8;
+}
+
+.type-economic_release {
+  background-color: #c5a3e0;
+}
+
+.type-company_announcement {
+  background-color: #93cfae;
+}
+
+.type-commodity_report {
+  background-color: #f0b580;
+}
+
+.type-weather {
+  background-color: #7fc4cc;
+}

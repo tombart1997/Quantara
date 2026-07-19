@@ -1,0 +1,24 @@
+# Local development infrastructure.
+# Only PostgreSQL runs in Docker for now — the backend and frontend run
+# directly on the host for a faster dev loop (hot reload).
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: investing_dashboard_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-investor}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-investor}
+      POSTGRES_DB: ${POSTGRES_DB:-investing_dashboard}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-investor}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:

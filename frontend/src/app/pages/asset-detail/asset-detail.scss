@@ -1,0 +1,61 @@
+mat-card {
+  margin-bottom: 16px;
+}
+
+.chart {
+  height: 400px;
+  width: 100%;
+}
+
+.empty {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.journal-form {
+  display: flex;
+  flex-direction: column;
+  max-width: 560px;
+  gap: 4px;
+
+  button {
+    align-self: flex-start;
+  }
+}
+
+h3 {
+  margin-bottom: 4px;
+}
+
+.signal {
+  margin-bottom: 20px;
+}
+
+.signal-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.signal-name {
+  font-weight: 500;
+}
+
+.reasons {
+  margin: 8px 0 0;
+  padding-left: 20px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+}
+
+.score-high {
+  --mdc-chip-label-text-color: #4ade80;
+}
+
+.score-mid {
+  --mdc-chip-label-text-color: #fbbf24;
+}
+
+.score-low {
+  --mdc-chip-label-text-color: #f87171;
+}

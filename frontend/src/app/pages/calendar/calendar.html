@@ -1,0 +1,43 @@
+<div class="calendar-header">
+  <button mat-icon-button (click)="previousMonth()" aria-label="Previous month">
+    <mat-icon>chevron_left</mat-icon>
+  </button>
+  <h1>{{ title() }}</h1>
+  <button mat-icon-button (click)="nextMonth()" aria-label="Next month">
+    <mat-icon>chevron_right</mat-icon>
+  </button>
+</div>
+
+<div class="legend">
+  @for (item of legend; track item[0]) {
+    <span class="legend-item">
+      <span class="dot" [class]="'dot ' + typeClass(item[0])"></span>{{ item[1] }}
+    </span>
+  }
+</div>
+
+<div class="grid weekday-row">
+  @for (weekday of ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']; track weekday) {
+    <div class="weekday">{{ weekday }}</div>
+  }
+</div>
+
+<div class="grid">
+  @for (cell of cells(); track $index) {
+    @if (cell) {
+      <div class="day-cell" [class.today]="cell.isToday">
+        <span class="day-number">{{ cell.day }}</span>
+        @for (event of eventsFor(cell.date); track event.id) {
+          <span class="event-chip" [class]="'event-chip ' + typeClass(event.event_type)">
+            @if (event.asset_ticker) {
+              <strong>{{ event.asset_ticker }}</strong>
+            }
+            {{ event.title }}
+          </span>
+        }
+      </div>
+    } @else {
+      <div class="day-cell blank"></div>
+    }
+  }
+</div>
