@@ -54,13 +54,24 @@ is installed. No code changes needed.
 
 ## Development status
 
-Core app is complete: dashboard, asset pages (ECharts price history, event
-timeline, news, journal), calendar, journal, and a transparent rule-based
-signal engine — all wired end-to-end.
+Core app is complete: dashboard, asset explorer (36 assets incl. leveraged
+ETFs), asset pages (ECharts price history, event timeline, news, journal),
+calendar with recurring events, thesis-review journal, and a transparent
+rule-based signal engine (7 rules) — all wired end-to-end.
 
-**Live data:** news is fetched from Google News RSS (no API key) per asset
-via `POST /api/v1/news/refresh`; sentiment is a documented keyword-scoring
-placeholder until an AI/NLP step is added. Prices come from Yahoo Finance
-(yfinance, no API key) via `POST /api/v1/assets/refresh-prices`; set
-`MARKET_DATA_PROVIDER=mock` to go back to synthetic data. Real providers
-plug into `app/services/providers/`.
+**Automation:** a background scheduler refreshes prices, events, news, and
+signals every 30 minutes (`REFRESH_INTERVAL_MINUTES`), with a freshness
+indicator and manual "refresh now" in the dashboard header.
+
+**Live data:** prices from Yahoo Finance (yfinance), news from Google News
+RSS, earnings events from Yahoo — no API keys needed. Macro events activate
+with a free `FINNHUB_API_KEY`. Sentiment is LLM-scored via Kimi when
+`KIMI_API_KEY` is set, with a keyword-scorer fallback.
+
+**AI consultant:** global dialog (pink FAB) with asset-consult and
+cross-reference modes (14-indicator registry, auto-included calendar events,
+3-step narrative analysis). Prompt-only mode without a key; direct Kimi
+answers with one.
+
+**Tests:** `cd backend && .venv/Scripts/python -m pytest tests/` (37 tests:
+signal rules, recurrence, LLM sentiment parsing, ingestion dedup).

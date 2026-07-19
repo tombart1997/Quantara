@@ -43,6 +43,7 @@
               <span class="signal-name">{{ signal.name }}</span>
               <mat-chip [class]="scoreColor(signal)">{{ signal.score }}/100</mat-chip>
             </div>
+            <span class="signal-date">{{ signal.created_at | date: 'mediumDate' }}</span>
             <mat-progress-bar mode="determinate" [value]="signal.score"></mat-progress-bar>
             <ul class="reasons">
               @for (reason of signal.reasons; track reason) {

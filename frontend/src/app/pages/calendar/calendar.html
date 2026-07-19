@@ -52,20 +52,24 @@
   }
 </div>
 
+@if (!hasEventsThisMonth()) {
+  <p class="empty">No events this month.</p>
+}
+
 <mat-menu #eventMenu="matMenu">
   @if (activeEvent(); as active) {
     @if (active.series_id) {
       <button mat-menu-item (click)="deleteOccurrence(active)">
-        <mat-icon>delete</mat-icon>
+        <mat-icon class="danger">delete</mat-icon>
         Delete only this occurrence
       </button>
       <button mat-menu-item (click)="deleteSeries(active)">
-        <mat-icon>delete_forever</mat-icon>
+        <mat-icon class="danger">delete_forever</mat-icon>
         Delete the whole series ({{ seriesCount(active.series_id) }} events)
       </button>
     } @else {
       <button mat-menu-item (click)="deleteOccurrence(active)">
-        <mat-icon>delete</mat-icon>
+        <mat-icon class="danger">delete</mat-icon>
         Delete event
       </button>
     }

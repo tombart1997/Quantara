@@ -15,7 +15,9 @@ import {
   MarketEvent,
   NewsArticle,
   PriceBar,
+  RefreshStatus,
   Signal,
+  ThesisReviewItem,
 } from './api.models';
 
 /** Single access point for every backend call. Components never build URLs. */
@@ -82,6 +84,14 @@ export class ApiService {
     return this.http.post<JournalEntry>(`${this.base}/journal`, entry);
   }
 
+  deleteJournalEntry(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/journal/${id}`);
+  }
+
+  getThesisReview(): Observable<ThesisReviewItem[]> {
+    return this.http.get<ThesisReviewItem[]>(`${this.base}/journal/review`);
+  }
+
   getSignals(assetId?: number): Observable<Signal[]> {
     let params = new HttpParams();
     if (assetId != null) params = params.set('asset_id', assetId);
@@ -98,6 +108,20 @@ export class ApiService {
 
   getIndicators(): Observable<Indicator[]> {
     return this.http.get<Indicator[]>(`${this.base}/ai/indicators`);
+  }
+
+  getRefreshStatus(): Observable<RefreshStatus> {
+    return this.http.get<RefreshStatus>(`${this.base}/refresh-status`);
+  }
+
+  /** Latest close prices per ticker (oldest first), one call for all assets. */
+  getSparklines(days = 30): Observable<Record<string, number[]>> {
+    const params = new HttpParams().set('days', days);
+    return this.http.get<Record<string, number[]>>(`${this.base}/assets/sparklines`, { params });
+  }
+
+  refreshAll(): Observable<unknown> {
+    return this.http.post<unknown>(`${this.base}/refresh-all`, {});
   }
 
   aiConsult(

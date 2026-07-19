@@ -70,6 +70,12 @@ export class CalendarComponent {
     () => `${MONTH_NAMES[this.viewMonth()]} ${this.viewYear()}`,
   );
 
+  /** True when the displayed month contains at least one event. */
+  protected readonly hasEventsThisMonth = computed(() => {
+    const prefix = `${this.viewYear()}-${String(this.viewMonth() + 1).padStart(2, '0')}-`;
+    return this.events().some((e) => e.date.startsWith(prefix));
+  });
+
   private readonly eventsByDate = computed(() => {
     const map = new Map<string, MarketEvent[]>();
     for (const event of this.events()) {

@@ -116,6 +116,18 @@ class JournalRead(BaseModel):
     confidence: int
 
 
+class ThesisReviewItem(BaseModel):
+    """A journal entry paired with what the market did since it was written."""
+
+    entry: JournalRead
+    asset_ticker: str | None
+    entry_close: float | None
+    current_close: float | None
+    change_pct: float | None
+    days_open: int
+    review_due: bool
+
+
 # --- Signals -----------------------------------------------------------------------
 class SignalRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)

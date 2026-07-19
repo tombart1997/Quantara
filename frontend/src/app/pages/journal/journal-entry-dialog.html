@@ -1,0 +1,68 @@
+<h2 mat-dialog-title>
+  <mat-icon>edit_note</mat-icon>
+  Add journal entry
+</h2>
+
+<mat-dialog-content>
+  <form [formGroup]="form" (ngSubmit)="submit()" class="entry-form">
+    <mat-form-field class="full-width">
+      <mat-label>Asset</mat-label>
+      <mat-select formControlName="asset_id">
+        @for (asset of assets(); track asset.id) {
+          <mat-option [value]="asset.id">{{ asset.ticker }} — {{ asset.name }}</mat-option>
+        }
+      </mat-select>
+      @if (form.controls.asset_id.hasError('required')) {
+        <mat-error>Asset is required.</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field class="full-width">
+      <mat-label>Date</mat-label>
+      <input matInput type="date" formControlName="date" />
+      @if (form.controls.date.hasError('required')) {
+        <mat-error>Date is required.</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field class="full-width">
+      <mat-label>Thesis</mat-label>
+      <textarea matInput formControlName="thesis" rows="3"></textarea>
+      @if (form.controls.thesis.hasError('required')) {
+        <mat-error>Thesis is required.</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field class="full-width">
+      <mat-label>Expected outcome</mat-label>
+      <textarea matInput formControlName="expected_outcome" rows="2"></textarea>
+    </mat-form-field>
+
+    <mat-form-field class="full-width">
+      <mat-label>Risk</mat-label>
+      <textarea matInput formControlName="risk" rows="2"></textarea>
+    </mat-form-field>
+
+    <mat-form-field class="full-width">
+      <mat-label>Confidence (1-10)</mat-label>
+      <input matInput type="number" min="1" max="10" formControlName="confidence" />
+    </mat-form-field>
+
+    @if (errorMessage(); as message) {
+      <p class="error">{{ message }}</p>
+    }
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close>Cancel</button>
+  <button
+    mat-flat-button
+    color="primary"
+    (click)="submit()"
+    [disabled]="form.invalid || submitting()"
+  >
+    <mat-icon>add</mat-icon>
+    {{ submitting() ? 'Saving…' : 'Add entry' }}
+  </button>
+</mat-dialog-actions>

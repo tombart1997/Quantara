@@ -89,6 +89,16 @@ export interface JournalCreate {
   confidence: number;
 }
 
+export interface ThesisReviewItem {
+  entry: JournalEntry;
+  asset_ticker: string | null;
+  entry_close: number | null;
+  current_close: number | null;
+  change_pct: number | null;
+  days_open: number;
+  review_due: boolean;
+}
+
 export interface Signal {
   id: number;
   asset_id: number;
@@ -130,4 +140,10 @@ export interface AiConsultResponse {
   model: string;
   response: string | null;
   error?: string | null;
+}
+
+export interface RefreshStatus {
+  last_run: string | null;
+  last_result: unknown;
+  running: boolean;
 }

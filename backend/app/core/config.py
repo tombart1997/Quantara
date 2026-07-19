@@ -31,6 +31,11 @@ class Settings(BaseSettings):
     # Optional: Finnhub economic calendar (macro events). Free key at finnhub.io.
     finnhub_api_key: str = ""
 
+    # --- Auto-refresh ------------------------------------------------------
+    # Background loop keeping prices/events/news/signals current.
+    refresh_enabled: bool = True
+    refresh_interval_minutes: int = 30
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]

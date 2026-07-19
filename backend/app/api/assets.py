@@ -50,6 +50,21 @@ def refresh_price_data(
     return refresh_prices(db, days=days, ticker=ticker)
 
 
+@router.get("/sparklines")
+def get_sparklines(days: int = 30, db: Session = Depends(get_db)) -> dict[str, list[float]]:
+    """Recent closes for every asset, in one call — for explorer sparklines."""
+    result: dict[str, list[float]] = {}
+    for asset in db.scalars(select(Asset)):
+        closes = list(db.scalars(
+            select(PriceHistory.close)
+            .where(PriceHistory.asset_id == asset.id)
+            .order_by(PriceHistory.date.desc())
+            .limit(days)
+        ))
+        result[asset.ticker] = closes[::-1]  # oldest first
+    return result
+
+
 @router.get("/{ticker}", response_model=AssetRead)
 def get_asset(ticker: str, db: Session = Depends(get_db)) -> Asset:
     asset = db.scalar(select(Asset).where(Asset.ticker == ticker.upper()))

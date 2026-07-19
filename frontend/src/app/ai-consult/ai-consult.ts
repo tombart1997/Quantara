@@ -6,7 +6,7 @@ import { ClipboardModule } from '@angular/cdk/clipboard';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { MatDialogModule } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
@@ -18,6 +18,12 @@ import { ApiService } from '../core/api.service';
 import { AiConsultResponse } from '../core/api.models';
 
 type ConsultMode = 'asset' | 'cross';
+
+/** Optional prefill when the dialog is opened from a specific context (e.g. thesis review). */
+export interface AiConsultData {
+  ticker?: string;
+  question?: string;
+}
 
 @Component({
   selector: 'app-ai-consult',
@@ -41,6 +47,7 @@ export class AiConsultComponent {
   private readonly api = inject(ApiService);
   private readonly router = inject(Router);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly dialogData = inject<AiConsultData | null>(MAT_DIALOG_DATA, { optional: true });
 
   protected readonly assets = toSignal(this.api.getAssets(), { initialValue: [] });
   protected readonly status = toSignal(this.api.getAiStatus());
@@ -49,13 +56,17 @@ export class AiConsultComponent {
   protected readonly mode = signal<ConsultMode>('asset');
 
   // Asset consult mode: null = portfolio overview.
-  protected readonly ticker = signal<string | null>(this.tickerFromUrl());
+  protected readonly ticker = signal<string | null>(
+    this.dialogData?.ticker ?? this.tickerFromUrl(),
+  );
 
   // Cross-reference mode: target asset is required, preselected from the route.
-  protected readonly crossTicker = signal<string | null>(this.tickerFromUrl());
+  protected readonly crossTicker = signal<string | null>(
+    this.dialogData?.ticker ?? this.tickerFromUrl(),
+  );
   protected readonly selectedIndicators = signal<Set<string>>(new Set());
 
-  protected readonly question = signal('');
+  protected readonly question = signal(this.dialogData?.question ?? '');
 
   protected readonly result = signal<AiConsultResponse | null>(null);
   protected readonly loading = signal(false);

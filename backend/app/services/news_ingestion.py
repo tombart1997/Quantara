@@ -2,6 +2,10 @@
 
 Deduplication relies on the unique constraint on NewsArticle.url: anything
 already stored is skipped, so re-running ingestion is cheap and safe.
+
+Sentiment is scored in ONE batched pass over all new articles (LLM when
+configured, keyword fallback otherwise) — not per article — to keep the
+number of API calls low.
 """
 from __future__ import annotations
 
@@ -11,8 +15,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models import Asset, NewsArticle
+from app.services.llm_sentiment import score_headlines
 from app.services.news_providers import get_news_provider
-from app.services.news_providers.sentiment import score_text
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +29,7 @@ def ingest_news(db: Session, max_per_asset: int = 15) -> dict[str, int]:
     provider = get_news_provider()
     existing_urls = set(db.scalars(select(NewsArticle.url)))
     result: dict[str, int] = {}
+    pending: list[NewsArticle] = []
 
     for asset in db.scalars(select(Asset)):
         query = asset.news_keywords or asset.name
@@ -38,13 +43,33 @@ def ingest_news(db: Session, max_per_asset: int = 15) -> dict[str, int]:
                 url=item.url,
                 summary=item.summary,
                 published_at=item.published_at,
-                sentiment=score_text(item.headline),
+                sentiment=None,  # scored in the batch pass below
                 assets=[asset],
             )
             db.add(article)
             existing_urls.add(item.url)
+            pending.append(article)
             new_count += 1
         result[asset.ticker] = new_count
-        db.flush()  # per-asset flush keeps a later failure from losing everything
+
+    if pending:
+        scores = score_headlines([a.headline for a in pending])
+        for article, score in zip(pending, scores, strict=True):
+            article.sentiment = score
+
     db.commit()
     return result
+
+
+def rescore_sentiment(db: Session, limit: int = 100) -> dict[str, int]:
+    """Re-score the most recent articles (e.g. after adding an API key)."""
+    articles = list(db.scalars(
+        select(NewsArticle).order_by(NewsArticle.published_at.desc()).limit(limit)
+    ))
+    if not articles:
+        return {"rescored": 0}
+    scores = score_headlines([a.headline for a in articles])
+    for article, score in zip(articles, scores, strict=True):
+        article.sentiment = score
+    db.commit()
+    return {"rescored": len(articles)}

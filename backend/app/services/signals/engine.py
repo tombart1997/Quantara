@@ -20,8 +20,8 @@ from app.services.signals.rules import (
     evaluate,
 )
 
-# How many recent bars rules may inspect (volume rule needs 31).
-PRICE_LOOKBACK_DAYS = 45
+# How many recent days of bars rules may inspect (52-week rule needs ~1y).
+PRICE_LOOKBACK_DAYS = 370
 
 
 def build_context(db: Session, asset: Asset) -> SignalContext:

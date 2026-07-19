@@ -1,0 +1,25 @@
+h2[mat-dialog-title] {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  mat-icon {
+    color: #6ec1ff;
+  }
+}
+
+.entry-form {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 4px;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.error {
+  color: #f48fb1;
+  margin: 4px 0 0;
+}

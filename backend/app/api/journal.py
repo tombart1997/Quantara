@@ -7,7 +7,8 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.db.session import get_db
 from app.models import Asset, JournalEntry, User
-from app.schemas import JournalCreate, JournalRead
+from app.schemas import JournalCreate, JournalRead, ThesisReviewItem
+from app.services.thesis_review import build_review
 
 router = APIRouter(prefix="/api/v1/journal", tags=["journal"])
 
@@ -49,6 +50,14 @@ def list_entries(asset_id: int | None = None, db: Session = Depends(get_db)) -> 
     return [to_read(e) for e in db.scalars(stmt)]
 
 
+@router.get("/review", response_model=list[ThesisReviewItem])
+def thesis_review(db: Session = Depends(get_db)) -> list[dict]:
+    """Every journal entry with outcome metrics: price at entry vs now,
+    % change, age, and a review-due flag for entries over 30 days old."""
+    # to_read flattens the asset ticker onto the nested entry schema.
+    return [{**item, "entry": to_read(item["entry"])} for item in build_review(db)]
+
+
 @router.post("", response_model=JournalRead, status_code=201)
 def create_entry(payload: JournalCreate, db: Session = Depends(get_db)) -> JournalRead:
     if db.get(Asset, payload.asset_id) is None:
@@ -58,3 +67,13 @@ def create_entry(payload: JournalCreate, db: Session = Depends(get_db)) -> Journ
     db.commit()
     db.refresh(entry)
     return to_read(entry)
+
+
+@router.delete("/{entry_id}", status_code=204)
+def delete_entry(entry_id: int, db: Session = Depends(get_db)) -> None:
+    """Delete a journal entry."""
+    entry = db.get(JournalEntry, entry_id)
+    if entry is None:
+        raise HTTPException(404, f"Unknown journal entry id {entry_id}")
+    db.delete(entry)
+    db.commit()

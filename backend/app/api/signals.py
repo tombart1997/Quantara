@@ -1,6 +1,8 @@
 """Signal endpoints (read-only — signals are produced by the engine, step 4)."""
 from __future__ import annotations
 
+from datetime import datetime, timedelta
+
 from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
@@ -28,9 +30,12 @@ def to_read(signal: Signal) -> SignalRead:
 @router.get("", response_model=list[SignalRead])
 def list_signals(
     asset_id: int | None = None,
+    days: int | None = None,
     limit: int = 50,
     db: Session = Depends(get_db),
 ) -> list[SignalRead]:
+    """List signals, newest first. `days` looks back for history
+    (daily snapshots persist — recompute only replaces the current day)."""
     stmt = (
         select(Signal)
         .options(joinedload(Signal.asset))
@@ -39,6 +44,8 @@ def list_signals(
     )
     if asset_id is not None:
         stmt = stmt.where(Signal.asset_id == asset_id)
+    if days is not None:
+        stmt = stmt.where(Signal.created_at >= datetime.now() - timedelta(days=days))
     return [to_read(s) for s in db.scalars(stmt)]
 
 

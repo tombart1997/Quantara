@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.db.session import get_db
 from app.models import NewsArticle
 from app.schemas import NewsRead
-from app.services.news_ingestion import ingest_news
+from app.services.news_ingestion import ingest_news, rescore_sentiment
 
 router = APIRouter(prefix="/api/v1/news", tags=["news"])
 
@@ -50,3 +50,13 @@ def refresh_news(db: Session = Depends(get_db)) -> dict[str, int]:
     Already-known articles (by URL) are skipped. Returns {ticker: new count}.
     """
     return ingest_news(db)
+
+
+@router.post("/rescore-sentiment")
+def rescore(limit: int = 100, db: Session = Depends(get_db)) -> dict[str, int]:
+    """Re-score sentiment for the most recent articles.
+
+    Useful after adding a Kimi API key: existing keyword-scored (or
+    unscored) articles get proper LLM scores.
+    """
+    return rescore_sentiment(db, limit=limit)
