@@ -118,6 +118,12 @@ export interface AiStatus {
   base_url: string;
 }
 
+export interface Indicator {
+  id: string;
+  name: string;
+  watch: string;
+}
+
 export interface AiConsultResponse {
   prompt: string;
   configured: boolean;

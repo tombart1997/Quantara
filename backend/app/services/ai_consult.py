@@ -14,7 +14,7 @@ actually shows.
 from __future__ import annotations
 
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import httpx
 from sqlalchemy import select
@@ -22,6 +22,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.models import Asset, Event, JournalEntry, NewsArticle, PriceHistory, Signal
+from app.services.indicators import get_indicators
 
 logger = logging.getLogger(__name__)
 
@@ -39,15 +40,18 @@ SYSTEM_PROMPT = (
 CROSS_REFERENCE_SYSTEM_PROMPT = (
     "You are an investment research analyst specializing in cross-asset "
     "narrative analysis. You receive a snapshot of real data from the user's "
-    "database plus a set of events/themes the user selected. Your job: find "
-    "the narrative connecting those events to the target asset — including "
-    "non-obvious second-order effects (supply chains, input costs, rate "
-    "transmission, demand shifts, currency effects, positioning). Be strictly "
-    "metric-driven: cite the specific numbers from the data (price levels, "
-    "percentage changes, sentiment scores, importance ratings, dates) instead "
-    "of generic statements, and say explicitly when a hypothesized link is NOT "
-    "supported by the data. Do not give buy/sell instructions or price "
-    "targets; this is decision support, not financial advice."
+    "database, a set of well-known indicators/themes the user selected, and "
+    "upcoming calendar events for timing. Your job: find the narrative "
+    "connecting those indicators to the target asset — including non-obvious "
+    "second-order effects (supply chains, input costs, rate transmission, "
+    "demand shifts, currency effects, positioning). Use current real-world "
+    "readings of the indicators (look them up if you can) alongside the "
+    "provided data. Be strictly metric-driven: cite specific numbers (price "
+    "levels, percentage changes, sentiment scores, importance ratings, "
+    "dates) instead of generic statements, and say explicitly when a "
+    "hypothesized link is NOT supported by the data. Do not give buy/sell "
+    "instructions or price targets; this is decision support, not financial "
+    "advice. Follow the step structure requested in the task."
 )
 
 
@@ -154,61 +158,103 @@ def build_prompt(db: Session, ticker: str | None = None, question: str | None = 
     return "\n".join(parts)
 
 
-def _events_section(db: Session, event_ids: list[int]) -> str:
-    events = [e for e in (db.get(Event, i) for i in event_ids) if e is not None]
-    lines = ["## Selected events / themes to cross-reference"]
+def _indicators_section(indicator_ids: list[str]) -> str:
+    indicators = get_indicators(indicator_ids)
+    lines = ["## Selected indicators / themes to cross-reference",
+             "(Use current real-world readings for these — look them up.",
+             " The notes say which concrete metrics matter.)"]
+    for i in indicators:
+        lines.append(f"  - {i['name']}: {i['watch']}")
+    return "\n".join(lines)
+
+
+def _upcoming_events_section(db: Session, asset: Asset, days: int = 90) -> str:
+    """Auto-included calendar context: asset events + macro events, for timing."""
+    horizon = datetime.now() + timedelta(days=days)
+    events = list(db.scalars(
+        select(Event)
+        .where(Event.date >= datetime.now(), Event.date <= horizon,
+               (Event.asset_id == asset.id) | Event.asset_id.is_(None))
+        .order_by(Event.date).limit(12)
+    ))
+    if not events:
+        return "## Calendar events for timing\n  (none in the next 90 days)"
+    lines = ["## Calendar events for timing (next 90 days, asset + macro)",
+             "(Which of these could matter when timing a move ahead of the",
+             " narrative playing out?)"]
     for e in events:
-        line = (f"  - [{e.date:%Y-%m-%d}] {e.title} "
-                f"(type: {e.event_type.value}, importance: {e.importance}/5")
-        if e.asset:
-            line += f", linked asset: {e.asset.ticker}"
-        line += ")"
-        if e.description:
-            line += f" — {e.description}"
-        lines.append(line)
+        label = e.asset.ticker if e.asset else "MACRO"
+        lines.append(f"  - [{e.date:%Y-%m-%d}] {e.title} ({label}, "
+                     f"importance {e.importance}/5)")
     return "\n".join(lines)
 
 
 def build_cross_reference_prompt(
-    db: Session, ticker: str, event_ids: list[int], question: str | None = None
+    db: Session, ticker: str, indicator_ids: list[str], question: str | None = None
 ) -> str:
-    """Prompt that hunts for a narrative connecting N events to one asset."""
+    """Prompt that hunts for a narrative connecting N indicators to one asset.
+
+    Calendar events are included automatically (timing), indicators are the
+    user-selected lenses. Designed to work pasted into an EXTERNAL AI chat:
+    the model is told to use current real-world readings for the indicators.
+    """
     asset = db.scalar(select(Asset).where(Asset.ticker == ticker.upper()))
     if asset is None:
         raise ValueError(f"Unknown ticker {ticker!r}")
+    indicators = get_indicators(indicator_ids)
+    if not indicators:
+        raise ValueError("Cross-reference requires at least one valid indicator")
 
     parts = ["# Investment research context", ""]
     parts.append(_asset_section(db, asset))
     parts.append("")
-    parts.append(_events_section(db, event_ids))
+    parts.append(_indicators_section(indicator_ids))
+    parts.append("")
+    parts.append(_upcoming_events_section(db, asset))
     parts.append("")
     parts.append("# Task")
     if question and question.strip():
         parts.append(question.strip())
         parts.append("")
+    if len(indicators) > 1:
+        parts.append(
+            "STEP 1 — Relevance filter: which SUBSET of the selected indicators "
+            f"could actually move {asset.ticker}? Rank them by expected impact "
+            "and explicitly discard the ones that do not apply, with one-line "
+            "justifications."
+        )
+        parts.append("")
+        step = "STEP 2"
+    else:
+        step = "STEP 1"
     parts.append(
-        f"Cross-reference the selected events/themes against {asset.ticker}. "
-        "For each event, analyze the transmission channel to this asset "
-        "(direct exposure, supply chain, input costs, rates, demand, "
-        "positioning) and rate the link as strong / weak / unsupported based "
-        "on the data above. Then look for the combined narrative: do the "
-        "events reinforce or contradict each other for this asset? Ground "
-        "every claim in the specific numbers provided (price levels, % "
-        "changes, sentiment scores, importance ratings, dates). "
-        "Finish with a 'Rational summary' section that weighs strategic "
-        "options completely rationally: risk vs upside, and timing — which "
-        "event dates matter and what to watch before and after each."
+        f"{step} — Cross-reference: for each relevant indicator, analyze the "
+        f"transmission channel to {asset.ticker} (direct exposure, supply "
+        "chain, input costs, rates, demand, positioning) and rate the link "
+        "strong / weak / unsupported. Look for the combined narrative: do the "
+        "indicators reinforce or contradict each other for this asset, and is "
+        "there a non-obvious cross-reference the market may be overlooking? "
+        "Ground every claim in the specific numbers provided (price levels, % "
+        "changes, sentiment scores, importance ratings, dates) and in current "
+        "real-world readings of the indicators."
+    )
+    parts.append("")
+    parts.append(
+        f"{step[:-1]}{int(step[-1]) + 1} — Rational summary: weigh strategic "
+        "options completely rationally — risk vs upside, and timing. Use the "
+        "calendar events above: which dates matter, what to watch before and "
+        "after each, and where the narrative could be proven wrong."
     )
     return "\n".join(parts)
 
 
 def consult(db: Session, ticker: str | None, question: str | None,
-            event_ids: list[int] | None = None) -> dict:
+            indicator_ids: list[str] | None = None) -> dict:
     settings = get_settings()
-    if event_ids:
+    if indicator_ids is not None:
         if not ticker:
             raise ValueError("Cross-reference requires a target asset (ticker)")
-        prompt = build_cross_reference_prompt(db, ticker, event_ids, question)
+        prompt = build_cross_reference_prompt(db, ticker, indicator_ids, question)
         system_prompt = CROSS_REFERENCE_SYSTEM_PROMPT
     else:
         prompt = build_prompt(db, ticker, question)

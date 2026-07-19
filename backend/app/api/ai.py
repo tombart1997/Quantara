@@ -1,7 +1,8 @@
 """AI consultant endpoints.
 
-GET  /api/v1/ai/status  -> is a Kimi API key configured, and which model?
-POST /api/v1/ai/consult -> data-grounded prompt; with a key, also the answer.
+GET  /api/v1/ai/status     -> is a Kimi API key configured, and which model?
+GET  /api/v1/ai/indicators -> the curated cross-reference indicator registry
+POST /api/v1/ai/consult    -> data-grounded prompt; with a key, also the answer.
 """
 from __future__ import annotations
 
@@ -12,6 +13,7 @@ from sqlalchemy.orm import Session
 from app.core.config import get_settings
 from app.db.session import get_db
 from app.services.ai_consult import consult
+from app.services.indicators import INDICATORS
 
 router = APIRouter(prefix="/api/v1/ai", tags=["ai"])
 
@@ -22,12 +24,18 @@ class AiStatus(BaseModel):
     base_url: str
 
 
+class Indicator(BaseModel):
+    id: str
+    name: str
+    watch: str
+
+
 class AiConsultRequest(BaseModel):
     ticker: str | None = None          # asset context; None = portfolio overview
     question: str | None = Field(default=None, max_length=2000)
-    # When set, switches to cross-reference mode: N events vs one asset.
-    # Requires ticker. Capped to keep prompts sane.
-    event_ids: list[int] | None = Field(default=None, max_length=20)
+    # When set (even empty), switches to cross-reference mode: N indicators
+    # vs one asset. Requires ticker. Calendar events are auto-included.
+    indicators: list[str] | None = Field(default=None, max_length=len(INDICATORS))
 
 
 class AiConsultResponse(BaseModel):
@@ -48,9 +56,15 @@ def ai_status() -> AiStatus:
     )
 
 
+@router.get("/indicators", response_model=list[Indicator])
+def list_indicators() -> list[dict]:
+    """The curated indicator registry for cross-reference analysis."""
+    return INDICATORS
+
+
 @router.post("/consult", response_model=AiConsultResponse)
 def ai_consult(payload: AiConsultRequest, db: Session = Depends(get_db)) -> dict:
     try:
-        return consult(db, payload.ticker, payload.question, payload.event_ids)
+        return consult(db, payload.ticker, payload.question, payload.indicators)
     except ValueError as e:
         raise HTTPException(404, str(e)) from e

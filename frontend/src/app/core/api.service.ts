@@ -9,6 +9,7 @@ import {
   Asset,
   DashboardResponse,
   EventCreate,
+  Indicator,
   JournalCreate,
   JournalEntry,
   MarketEvent,
@@ -95,16 +96,20 @@ export class ApiService {
     return this.http.get<AiStatus>(`${this.base}/ai/status`);
   }
 
+  getIndicators(): Observable<Indicator[]> {
+    return this.http.get<Indicator[]>(`${this.base}/ai/indicators`);
+  }
+
   aiConsult(
     ticker: string | null,
     question: string | null,
-    eventIds?: number[] | null,
+    indicators?: string[] | null,
   ): Observable<AiConsultResponse> {
-    const body: { ticker: string | null; question: string | null; event_ids?: number[] } = {
+    const body: { ticker: string | null; question: string | null; indicators?: string[] } = {
       ticker,
       question,
     };
-    if (eventIds?.length) body.event_ids = eventIds;
+    if (indicators?.length) body.indicators = indicators;
     return this.http.post<AiConsultResponse>(`${this.base}/ai/consult`, body);
   }
 }

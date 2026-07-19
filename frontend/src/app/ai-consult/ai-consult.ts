@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { ClipboardModule } from '@angular/cdk/clipboard';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
@@ -14,11 +15,9 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
 import { ApiService } from '../core/api.service';
-import { AiConsultResponse, EventType, MarketEvent } from '../core/api.models';
+import { AiConsultResponse } from '../core/api.models';
 
 type ConsultMode = 'asset' | 'cross';
-
-const MAX_EVENTS = 20;
 
 @Component({
   selector: 'app-ai-consult',
@@ -27,6 +26,7 @@ const MAX_EVENTS = 20;
     ClipboardModule,
     MatButtonModule,
     MatButtonToggleModule,
+    MatCheckboxModule,
     MatDialogModule,
     MatFormFieldModule,
     MatIconModule,
@@ -44,6 +44,7 @@ export class AiConsultComponent {
 
   protected readonly assets = toSignal(this.api.getAssets(), { initialValue: [] });
   protected readonly status = toSignal(this.api.getAiStatus());
+  protected readonly indicators = toSignal(this.api.getIndicators(), { initialValue: [] });
 
   protected readonly mode = signal<ConsultMode>('asset');
 
@@ -52,12 +53,7 @@ export class AiConsultComponent {
 
   // Cross-reference mode: target asset is required, preselected from the route.
   protected readonly crossTicker = signal<string | null>(this.tickerFromUrl());
-  protected readonly selectedEventIds = signal<number[]>([]);
-
-  protected readonly events = toSignal(this.api.getEvents(), { initialValue: [] });
-  protected readonly sortedEvents = computed(() =>
-    [...this.events()].sort((a, b) => a.date.localeCompare(b.date)),
-  );
+  protected readonly selectedIndicators = signal<Set<string>>(new Set());
 
   protected readonly question = signal('');
 
@@ -66,18 +62,19 @@ export class AiConsultComponent {
 
   protected readonly canSubmit = computed(() => {
     if (this.mode() === 'asset') return true; // null ticker = portfolio overview
-    return this.crossTicker() !== null && this.selectedEventIds().length > 0;
+    return this.crossTicker() !== null && this.selectedIndicators().size > 0;
   });
 
-  protected eventLabel(event: MarketEvent): string {
-    const date = event.date.slice(0, 10);
-    const ticker = event.asset_ticker ?? 'MACRO';
-    return `${date} · ${ticker} · ${event.title} (${this.formatType(event.event_type)})`;
-  }
-
-  protected onEventSelection(ids: number[]): void {
-    // Cap the selection at the API limit.
-    this.selectedEventIds.set(ids.slice(0, MAX_EVENTS));
+  protected toggleIndicator(id: string, checked: boolean): void {
+    this.selectedIndicators.update((selected) => {
+      const next = new Set(selected);
+      if (checked) {
+        next.add(id);
+      } else {
+        next.delete(id);
+      }
+      return next;
+    });
   }
 
   protected consult(): void {
@@ -90,7 +87,7 @@ export class AiConsultComponent {
       .aiConsult(
         cross ? this.crossTicker() : this.ticker(),
         question,
-        cross ? this.selectedEventIds() : null,
+        cross ? [...this.selectedIndicators()] : null,
       )
       .subscribe({
         next: (res) => {
@@ -103,10 +100,6 @@ export class AiConsultComponent {
 
   protected copied(): void {
     this.snackBar.open('Copied!', undefined, { duration: 2000 });
-  }
-
-  private formatType(type: EventType): string {
-    return type.replace(/_/g, ' ').toLowerCase();
   }
 
   private tickerFromUrl(): string | null {

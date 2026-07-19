@@ -40,19 +40,22 @@
       </mat-select>
     </mat-form-field>
 
-    <mat-form-field class="full-width">
-      <mat-label>Events to cross-reference (max 20)</mat-label>
-      <mat-select
-        multiple
-        [value]="selectedEventIds()"
-        (selectionChange)="onEventSelection($event.value)"
-      >
-        @for (event of sortedEvents(); track event.id) {
-          <mat-option [value]="event.id">{{ eventLabel(event) }}</mat-option>
-        }
-      </mat-select>
-      <mat-hint>{{ selectedEventIds().length }}/20 selected</mat-hint>
-    </mat-form-field>
+    <div class="indicator-header">
+      <span>Indicators to cross-reference</span>
+      <span class="indicator-count">{{ selectedIndicators().size }} selected</span>
+    </div>
+    <div class="indicator-list">
+      @for (indicator of indicators(); track indicator.id) {
+        <mat-checkbox
+          [checked]="selectedIndicators().has(indicator.id)"
+          (change)="toggleIndicator(indicator.id, $event.checked)"
+        >
+          <span class="indicator-name">{{ indicator.name }}</span>
+          <span class="indicator-watch">{{ indicator.watch }}</span>
+        </mat-checkbox>
+      }
+    </div>
+    <p class="hint">Relevant upcoming calendar events are included automatically for timing.</p>
   }
 
   <mat-form-field class="full-width">

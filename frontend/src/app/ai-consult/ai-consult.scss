@@ -25,6 +25,53 @@ h2[mat-dialog-title] {
   }
 }
 
+.indicator-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.85rem;
+}
+
+.indicator-count {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.indicator-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 260px;
+  overflow-y: auto;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 8px;
+  padding: 4px 12px;
+  margin-bottom: 8px;
+  background: #0c121b;
+
+  mat-checkbox {
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+}
+
+.indicator-name {
+  display: block;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.indicator-watch {
+  display: block;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.55);
+}
+
 .actions-row {
   display: flex;
   align-items: center;
