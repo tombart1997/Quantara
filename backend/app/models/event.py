@@ -31,6 +31,10 @@ class Event(Base):
     description: Mapped[str | None] = mapped_column(Text)
     # 1 (minor) to 5 (market-moving) — lets the UI and signal engine weigh events.
     importance: Mapped[int] = mapped_column(Integer, default=3)
+    # Recurrence of a manually created series. Occurrences are materialized
+    # as real rows sharing one series_id, so downstream queries stay simple.
+    recurrence: Mapped[str] = mapped_column(String(12), server_default="NONE")
+    series_id: Mapped[str | None] = mapped_column(String(36), index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     asset: Mapped[Asset | None] = relationship(back_populates="events")

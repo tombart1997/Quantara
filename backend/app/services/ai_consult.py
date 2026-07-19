@@ -36,6 +36,20 @@ SYSTEM_PROMPT = (
     "concise (under 400 words)."
 )
 
+CROSS_REFERENCE_SYSTEM_PROMPT = (
+    "You are an investment research analyst specializing in cross-asset "
+    "narrative analysis. You receive a snapshot of real data from the user's "
+    "database plus a set of events/themes the user selected. Your job: find "
+    "the narrative connecting those events to the target asset — including "
+    "non-obvious second-order effects (supply chains, input costs, rate "
+    "transmission, demand shifts, currency effects, positioning). Be strictly "
+    "metric-driven: cite the specific numbers from the data (price levels, "
+    "percentage changes, sentiment scores, importance ratings, dates) instead "
+    "of generic statements, and say explicitly when a hypothesized link is NOT "
+    "supported by the data. Do not give buy/sell instructions or price "
+    "targets; this is decision support, not financial advice."
+)
+
 
 def _asset_section(db: Session, asset: Asset) -> str:
     lines = [
@@ -140,9 +154,65 @@ def build_prompt(db: Session, ticker: str | None = None, question: str | None = 
     return "\n".join(parts)
 
 
-def consult(db: Session, ticker: str | None, question: str | None) -> dict:
+def _events_section(db: Session, event_ids: list[int]) -> str:
+    events = [e for e in (db.get(Event, i) for i in event_ids) if e is not None]
+    lines = ["## Selected events / themes to cross-reference"]
+    for e in events:
+        line = (f"  - [{e.date:%Y-%m-%d}] {e.title} "
+                f"(type: {e.event_type.value}, importance: {e.importance}/5")
+        if e.asset:
+            line += f", linked asset: {e.asset.ticker}"
+        line += ")"
+        if e.description:
+            line += f" — {e.description}"
+        lines.append(line)
+    return "\n".join(lines)
+
+
+def build_cross_reference_prompt(
+    db: Session, ticker: str, event_ids: list[int], question: str | None = None
+) -> str:
+    """Prompt that hunts for a narrative connecting N events to one asset."""
+    asset = db.scalar(select(Asset).where(Asset.ticker == ticker.upper()))
+    if asset is None:
+        raise ValueError(f"Unknown ticker {ticker!r}")
+
+    parts = ["# Investment research context", ""]
+    parts.append(_asset_section(db, asset))
+    parts.append("")
+    parts.append(_events_section(db, event_ids))
+    parts.append("")
+    parts.append("# Task")
+    if question and question.strip():
+        parts.append(question.strip())
+        parts.append("")
+    parts.append(
+        f"Cross-reference the selected events/themes against {asset.ticker}. "
+        "For each event, analyze the transmission channel to this asset "
+        "(direct exposure, supply chain, input costs, rates, demand, "
+        "positioning) and rate the link as strong / weak / unsupported based "
+        "on the data above. Then look for the combined narrative: do the "
+        "events reinforce or contradict each other for this asset? Ground "
+        "every claim in the specific numbers provided (price levels, % "
+        "changes, sentiment scores, importance ratings, dates). "
+        "Finish with a 'Rational summary' section that weighs strategic "
+        "options completely rationally: risk vs upside, and timing — which "
+        "event dates matter and what to watch before and after each."
+    )
+    return "\n".join(parts)
+
+
+def consult(db: Session, ticker: str | None, question: str | None,
+            event_ids: list[int] | None = None) -> dict:
     settings = get_settings()
-    prompt = build_prompt(db, ticker, question)
+    if event_ids:
+        if not ticker:
+            raise ValueError("Cross-reference requires a target asset (ticker)")
+        prompt = build_cross_reference_prompt(db, ticker, event_ids, question)
+        system_prompt = CROSS_REFERENCE_SYSTEM_PROMPT
+    else:
+        prompt = build_prompt(db, ticker, question)
+        system_prompt = SYSTEM_PROMPT
     result = {
         "prompt": prompt,
         "configured": bool(settings.kimi_api_key),
@@ -160,7 +230,7 @@ def consult(db: Session, ticker: str | None, question: str | None) -> dict:
                 json={
                     "model": settings.kimi_model,
                     "messages": [
-                        {"role": "system", "content": SYSTEM_PROMPT},
+                        {"role": "system", "content": system_prompt},
                         {"role": "user", "content": prompt},
                     ],
                     "temperature": 0.3,

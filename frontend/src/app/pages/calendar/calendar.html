@@ -6,6 +6,11 @@
   <button mat-icon-button (click)="nextMonth()" aria-label="Next month">
     <mat-icon>chevron_right</mat-icon>
   </button>
+  <span class="spacer"></span>
+  <button mat-flat-button color="primary" (click)="openAddEvent()">
+    <mat-icon>add</mat-icon>
+    Add event
+  </button>
 </div>
 
 <div class="legend">
@@ -28,7 +33,12 @@
       <div class="day-cell" [class.today]="cell.isToday">
         <span class="day-number">{{ cell.day }}</span>
         @for (event of eventsFor(cell.date); track event.id) {
-          <span class="event-chip" [class]="'event-chip ' + typeClass(event.event_type)">
+          <span
+            class="event-chip"
+            [class]="'event-chip ' + typeClass(event.event_type)"
+            [matMenuTriggerFor]="eventMenu"
+            (click)="activeEvent.set(event)"
+          >
             @if (event.asset_ticker) {
               <strong>{{ event.asset_ticker }}</strong>
             }
@@ -41,3 +51,23 @@
     }
   }
 </div>
+
+<mat-menu #eventMenu="matMenu">
+  @if (activeEvent(); as active) {
+    @if (active.series_id) {
+      <button mat-menu-item (click)="deleteOccurrence(active)">
+        <mat-icon>delete</mat-icon>
+        Delete only this occurrence
+      </button>
+      <button mat-menu-item (click)="deleteSeries(active)">
+        <mat-icon>delete_forever</mat-icon>
+        Delete the whole series ({{ seriesCount(active.series_id) }} events)
+      </button>
+    } @else {
+      <button mat-menu-item (click)="deleteOccurrence(active)">
+        <mat-icon>delete</mat-icon>
+        Delete event
+      </button>
+    }
+  }
+</mat-menu>

@@ -1,10 +1,15 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { Subject, startWith, switchMap } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 import { ApiService } from '../../core/api.service';
 import { EventType, MarketEvent } from '../../core/api.models';
+import { AddEventDialogComponent } from './add-event-dialog';
 
 interface DayCell {
   day: number;
@@ -37,18 +42,27 @@ const TYPE_LABELS: Record<EventType, string> = {
 
 @Component({
   selector: 'app-calendar',
-  imports: [MatButtonModule, MatIconModule],
+  imports: [MatButtonModule, MatIconModule, MatMenuModule],
   templateUrl: './calendar.html',
   styleUrl: './calendar.scss',
 })
 export class CalendarComponent {
   private readonly api = inject(ApiService);
+  private readonly dialog = inject(MatDialog);
+  private readonly snackBar = inject(MatSnackBar);
 
   private readonly today = new Date();
   protected readonly viewYear = signal(this.today.getFullYear());
   protected readonly viewMonth = signal(this.today.getMonth()); // 0-based
 
-  protected readonly events = toSignal(this.api.getEvents(), { initialValue: [] });
+  private readonly refreshEvents = new Subject<void>();
+  protected readonly events = toSignal(
+    this.refreshEvents.pipe(
+      startWith(void 0),
+      switchMap(() => this.api.getEvents()),
+    ),
+    { initialValue: [] },
+  );
 
   protected readonly legend = Object.entries(TYPE_LABELS) as [EventType, string][];
 
@@ -86,6 +100,38 @@ export class CalendarComponent {
     return this.eventsByDate().get(date) ?? [];
   }
 
+  /** The event whose chip opened the delete menu. */
+  protected readonly activeEvent = signal<MarketEvent | null>(null);
+
+  private readonly seriesCounts = computed(() => {
+    const counts = new Map<string, number>();
+    for (const event of this.events()) {
+      if (event.series_id) {
+        counts.set(event.series_id, (counts.get(event.series_id) ?? 0) + 1);
+      }
+    }
+    return counts;
+  });
+
+  protected seriesCount(seriesId: string): number {
+    return this.seriesCounts().get(seriesId) ?? 0;
+  }
+
+  protected deleteOccurrence(event: MarketEvent): void {
+    this.api.deleteEvent(event.id).subscribe(() => {
+      this.snackBar.open('Event deleted', undefined, { duration: 2500 });
+      this.refreshEvents.next();
+    });
+  }
+
+  protected deleteSeries(event: MarketEvent): void {
+    if (!event.series_id) return;
+    this.api.deleteEventSeries(event.series_id).subscribe((result) => {
+      this.snackBar.open(`${result.deleted} events deleted`, undefined, { duration: 2500 });
+      this.refreshEvents.next();
+    });
+  }
+
   protected typeLabel(type: EventType): string {
     return TYPE_LABELS[type];
   }
@@ -110,5 +156,24 @@ export class CalendarComponent {
     } else {
       this.viewMonth.update((m) => m + 1);
     }
+  }
+
+  protected openAddEvent(): void {
+    this.dialog
+      .open(AddEventDialogComponent, { width: '560px', maxWidth: '95vw' })
+      .afterClosed()
+      .subscribe((created: MarketEvent[] | undefined) => {
+        if (!created?.length) return;
+        this.snackBar.open(
+          created.length === 1 ? 'Event added' : `${created.length} events added`,
+          undefined,
+          { duration: 2500 },
+        );
+        // Jump the calendar to the first occurrence's month so it's visible immediately.
+        const [year, month] = created[0].date.slice(0, 10).split('-').map(Number);
+        this.viewYear.set(year);
+        this.viewMonth.set(month - 1);
+        this.refreshEvents.next();
+      });
   }
 }

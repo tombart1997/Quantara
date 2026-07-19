@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     kimi_base_url: str = "https://api.kimi.com/coding/v1"
     kimi_model: str = "kimi-for-coding"
 
+    # Optional: Finnhub economic calendar (macro events). Free key at finnhub.io.
+    finnhub_api_key: str = ""
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]

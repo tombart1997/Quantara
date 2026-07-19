@@ -11,6 +11,8 @@ export type EventType =
   | 'COMMODITY_REPORT'
   | 'WEATHER';
 
+export type Recurrence = 'NONE' | 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
+
 export interface Asset {
   id: number;
   ticker: string;
@@ -42,6 +44,18 @@ export interface MarketEvent {
   title: string;
   description: string | null;
   importance: number;
+  recurrence: Recurrence;
+  series_id: string | null;
+}
+
+export interface EventCreate {
+  asset_id: number | null;
+  event_type: EventType;
+  date: string; // ISO datetime, e.g. 2026-08-01T14:00:00
+  title: string;
+  description: string | null;
+  importance: number;
+  recurrence?: Recurrence;
 }
 
 export interface NewsArticle {

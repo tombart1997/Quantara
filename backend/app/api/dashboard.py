@@ -55,8 +55,13 @@ def get_dashboard(db: Session = Depends(get_db)) -> DashboardResponse:
     upcoming = db.scalars(
         select(Event).where(Event.date >= datetime.now()).order_by(Event.date).limit(10)
     )
+    # Recent news only for watchlisted assets — the dashboard is the user's
+    # curated view, not a firehose of all 36 tickers.
     recent_news = db.scalars(
-        select(NewsArticle).order_by(NewsArticle.published_at.desc()).limit(10)
+        select(NewsArticle)
+        .where(NewsArticle.assets.any(Asset.in_watchlist.is_(True)))
+        .order_by(NewsArticle.published_at.desc())
+        .limit(10)
     ).unique()
     active_signals = db.scalars(
         select(Signal).order_by(Signal.created_at.desc()).limit(10)

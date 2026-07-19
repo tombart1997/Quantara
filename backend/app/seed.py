@@ -4,17 +4,11 @@ Run from backend/:  python -m app.seed
 """
 from __future__ import annotations
 
-from datetime import datetime, timedelta
-
 from app.db.session import SessionLocal
 from app.models import (
     Asset,
     AssetType,
-    Event,
-    EventType,
-    JournalEntry,
     PriceHistory,
-    User,
 )
 from app.services.providers import get_provider
 
@@ -58,11 +52,6 @@ ASSETS = [
 HISTORY_DAYS = 365
 
 
-def days_from_now(days: int, hour: int = 14) -> datetime:
-    """Event timestamps anchored to 'now' so demo data is always upcoming."""
-    return (datetime.now() + timedelta(days=days)).replace(hour=hour, minute=0, second=0, microsecond=0)
-
-
 def seed() -> None:
     db = SessionLocal()
     try:
@@ -85,51 +74,9 @@ def seed() -> None:
                     high=bar.high, low=bar.low, close=bar.close, volume=bar.volume,
                 ))
 
-        # --- Events -------------------------------------------------------
-        nvda, cc, gc = assets["NVDA"], assets["CC"], assets["GC"]
-        db.add_all([
-            Event(asset_id=nvda.id, event_type=EventType.EARNINGS, date=days_from_now(21),
-                  title="NVIDIA Q2 earnings report", importance=5,
-                  description="Quarterly results; data-center revenue in focus."),
-            Event(asset_id=nvda.id, event_type=EventType.COMPANY_ANNOUNCEMENT, date=days_from_now(35),
-                  title="NVIDIA at Global AI Conference", importance=3,
-                  description="Keynote; potential product announcements."),
-            Event(asset_id=nvda.id, event_type=EventType.ECONOMIC_RELEASE, date=days_from_now(10),
-                  title="Export regulation announcement", importance=4,
-                  description="Expected update on AI chip export rules."),
-            Event(asset_id=cc.id, event_type=EventType.COMMODITY_REPORT, date=days_from_now(14),
-                  title="ICCO quarterly bulletin", importance=4,
-                  description="Supply/demand balance update from the ICCO."),
-            Event(asset_id=cc.id, event_type=EventType.COMMODITY_REPORT, date=days_from_now(28),
-                  title="West Africa crop estimates", importance=4,
-                  description="Mid-crop pod count estimates for Ivory Coast and Ghana."),
-            Event(asset_id=cc.id, event_type=EventType.WEATHER, date=days_from_now(7),
-                  title="Harmattan season outlook", importance=3,
-                  description="Dry wind season can stress cocoa pods in West Africa."),
-            Event(asset_id=cc.id, event_type=EventType.COMMODITY_REPORT, date=days_from_now(45),
-                  title="ICE cocoa inventory report", importance=3,
-                  description="Certified warehouse stocks update."),
-            Event(asset_id=gc.id, event_type=EventType.ECONOMIC_RELEASE, date=days_from_now(12),
-                  title="FOMC rate decision", importance=5,
-                  description="Rate path guidance moves gold."),
-            Event(asset_id=None, event_type=EventType.ECONOMIC_RELEASE, date=days_from_now(5),
-                  title="US CPI release", importance=5,
-                  description="Macro event — affects the whole market."),
-        ])
-
-        # --- Default user + example journal entry --------------------------
-        # NOTE: no mock news is seeded anymore — real articles come from the
-        # news provider (POST /api/v1/news/refresh).
-        user = User(email="local@investing-dashboard", display_name="Me")
-        db.add(user)
-        db.flush()
-        db.add(JournalEntry(
-            asset_id=cc.id, user_id=user.id, date=datetime.now().date(),
-            thesis="Supply shortage may be underestimated.",
-            expected_outcome="Higher prices.",
-            risk="Demand destruction.",
-            confidence=7,
-        ))
+        # NOTE: nothing content-like is seeded anymore — no mock events, no
+        # mock news, no example journal entries. Real data comes from the
+        # providers (refresh endpoints) and the user's own entries.
 
         db.commit()
 
@@ -138,8 +85,8 @@ def seed() -> None:
         created_signals = run_signal_engine(db)
 
         print(f"Seeded {len(assets)} assets with {HISTORY_DAYS} days of prices, "
-              f"9 events, 1 journal entry, "
-              f"{len(created_signals)} signals.")
+              f"{len(created_signals)} signals. "
+              f"No events/news/journal — use the refresh endpoints for real data.")
     except Exception:
         db.rollback()
         raise

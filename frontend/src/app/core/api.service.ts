@@ -8,6 +8,7 @@ import {
   AiStatus,
   Asset,
   DashboardResponse,
+  EventCreate,
   JournalCreate,
   JournalEntry,
   MarketEvent,
@@ -51,6 +52,19 @@ export class ApiService {
     return this.http.get<MarketEvent[]>(`${this.base}/events`, { params });
   }
 
+  createEvent(payload: EventCreate): Observable<MarketEvent[]> {
+    // The API expands recurring events into a series: the response is always an array.
+    return this.http.post<MarketEvent[]>(`${this.base}/events`, payload);
+  }
+
+  deleteEvent(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/events/${id}`);
+  }
+
+  deleteEventSeries(seriesId: string): Observable<{ deleted: number }> {
+    return this.http.delete<{ deleted: number }>(`${this.base}/events/series/${seriesId}`);
+  }
+
   getNews(assetId?: number, limit = 20): Observable<NewsArticle[]> {
     let params = new HttpParams().set('limit', limit);
     if (assetId != null) params = params.set('asset_id', assetId);
@@ -81,7 +95,16 @@ export class ApiService {
     return this.http.get<AiStatus>(`${this.base}/ai/status`);
   }
 
-  aiConsult(ticker: string | null, question: string | null): Observable<AiConsultResponse> {
-    return this.http.post<AiConsultResponse>(`${this.base}/ai/consult`, { ticker, question });
+  aiConsult(
+    ticker: string | null,
+    question: string | null,
+    eventIds?: number[] | null,
+  ): Observable<AiConsultResponse> {
+    const body: { ticker: string | null; question: string | null; event_ids?: number[] } = {
+      ticker,
+      question,
+    };
+    if (eventIds?.length) body.event_ids = eventIds;
+    return this.http.post<AiConsultResponse>(`${this.base}/ai/consult`, body);
   }
 }

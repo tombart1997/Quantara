@@ -1,0 +1,92 @@
+<h2 mat-dialog-title>
+  <mat-icon>event</mat-icon>
+  Add event
+</h2>
+
+<mat-dialog-content>
+  <form [formGroup]="form" (ngSubmit)="submit()" class="event-form">
+    <mat-form-field class="full-width">
+      <mat-label>Asset</mat-label>
+      <mat-select formControlName="asset_id">
+        <mat-option [value]="null">— Macro (all assets) —</mat-option>
+        @for (asset of assets(); track asset.id) {
+          <mat-option [value]="asset.id">{{ asset.ticker }} — {{ asset.name }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field class="full-width">
+      <mat-label>Event type</mat-label>
+      <mat-select formControlName="event_type">
+        @for (type of eventTypes; track type[0]) {
+          <mat-option [value]="type[0]">{{ type[1] }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <div class="date-row">
+      <mat-form-field>
+        <mat-label>Date</mat-label>
+        <input matInput type="date" formControlName="date" />
+        @if (form.controls.date.hasError('required')) {
+          <mat-error>Date is required.</mat-error>
+        }
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Time</mat-label>
+        <input matInput type="time" formControlName="time" />
+      </mat-form-field>
+    </div>
+
+    <mat-form-field class="full-width">
+      <mat-label>Repeats</mat-label>
+      <mat-select formControlName="recurrence">
+        @for (option of recurrenceOptions; track option[0]) {
+          <mat-option [value]="option[0]">{{ option[1] }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+    @if (recurrenceCount(); as count) {
+      <p class="hint">Creates the next {{ count }} occurrences (about 2 years).</p>
+    }
+
+    <mat-form-field class="full-width">
+      <mat-label>Title</mat-label>
+      <input matInput formControlName="title" maxlength="300" />
+      @if (form.controls.title.hasError('required')) {
+        <mat-error>Title is required.</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field class="full-width">
+      <mat-label>Description</mat-label>
+      <textarea matInput formControlName="description" rows="3"></textarea>
+    </mat-form-field>
+
+    <mat-form-field class="full-width">
+      <mat-label>Importance (1 = low, 5 = critical)</mat-label>
+      <mat-select formControlName="importance">
+        @for (level of importanceLevels; track level) {
+          <mat-option [value]="level">{{ level }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    @if (errorMessage(); as message) {
+      <p class="error">{{ message }}</p>
+    }
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close>Cancel</button>
+  <button
+    mat-flat-button
+    color="primary"
+    (click)="submit()"
+    [disabled]="form.invalid || submitting()"
+  >
+    <mat-icon>add</mat-icon>
+    {{ submitting() ? 'Saving…' : 'Add event' }}
+  </button>
+</mat-dialog-actions>

@@ -12,6 +12,19 @@ h2[mat-dialog-title] {
   width: 100%;
 }
 
+.mode-toggle {
+  margin-bottom: 16px;
+
+  mat-icon {
+    margin-right: 4px;
+    vertical-align: middle;
+  }
+
+  .mat-button-toggle-checked mat-icon {
+    color: #6ec1ff;
+  }
+}
+
 .actions-row {
   display: flex;
   align-items: center;

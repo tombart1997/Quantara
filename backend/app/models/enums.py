@@ -20,3 +20,12 @@ class EventType(str, enum.Enum):
     COMPANY_ANNOUNCEMENT = "COMPANY_ANNOUNCEMENT"
     COMMODITY_REPORT = "COMMODITY_REPORT"        # ICCO, USDA WASDE, OPEC, ...
     WEATHER = "WEATHER"                          # relevant for soft commodities
+
+
+class Recurrence(str, enum.Enum):
+    """How often an event repeats. NONE = one-off."""
+    NONE = "NONE"
+    WEEKLY = "WEEKLY"
+    MONTHLY = "MONTHLY"
+    QUARTERLY = "QUARTERLY"
+    YEARLY = "YEARLY"

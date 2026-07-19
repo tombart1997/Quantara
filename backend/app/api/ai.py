@@ -25,6 +25,9 @@ class AiStatus(BaseModel):
 class AiConsultRequest(BaseModel):
     ticker: str | None = None          # asset context; None = portfolio overview
     question: str | None = Field(default=None, max_length=2000)
+    # When set, switches to cross-reference mode: N events vs one asset.
+    # Requires ticker. Capped to keep prompts sane.
+    event_ids: list[int] | None = Field(default=None, max_length=20)
 
 
 class AiConsultResponse(BaseModel):
@@ -48,6 +51,6 @@ def ai_status() -> AiStatus:
 @router.post("/consult", response_model=AiConsultResponse)
 def ai_consult(payload: AiConsultRequest, db: Session = Depends(get_db)) -> dict:
     try:
-        return consult(db, payload.ticker, payload.question)
+        return consult(db, payload.ticker, payload.question, payload.event_ids)
     except ValueError as e:
         raise HTTPException(404, str(e)) from e

@@ -9,7 +9,7 @@ from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.models.enums import AssetType, EventType
+from app.models.enums import AssetType, EventType, Recurrence
 
 
 # --- Assets -----------------------------------------------------------------
@@ -60,6 +60,8 @@ class EventCreate(BaseModel):
     title: str = Field(min_length=1, max_length=300)
     description: str | None = None
     importance: int = Field(default=3, ge=1, le=5)
+    # NONE = one-off. Anything else materializes a series of occurrences.
+    recurrence: Recurrence = Recurrence.NONE
 
 
 class EventRead(BaseModel):
@@ -73,6 +75,8 @@ class EventRead(BaseModel):
     title: str
     description: str | None
     importance: int
+    recurrence: str = "NONE"
+    series_id: str | None = None
 
 
 # --- News -----------------------------------------------------------------------
