@@ -18,6 +18,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models import Asset, PriceHistory
+from app.services.enso import get_enso_status
 from app.services.news_providers import get_news_provider
 
 logger = logging.getLogger(__name__)
@@ -82,8 +83,8 @@ def _detect_news(signal: dict) -> dict:
         items = get_news_provider().fetch_news(query, max_items=30)
         count = len(items)
         activation = min(100.0, count / det["full_scale_articles"] * 100)
-        detail = (f"{count} articles in 7 days for '{query}' "
-                  f"(100% at {det['full_scale_articles']})")
+        detail = (f"narrative intensity: {count} articles in 7 days for "
+                  f"'{query}' (100% at {det['full_scale_articles']})")
         result = {"activation": round(activation, 1), "detail": detail}
     except Exception as e:
         logger.warning("News detector failed for %s: %s", query, e)
@@ -92,10 +93,20 @@ def _detect_news(signal: dict) -> dict:
     return result
 
 
+def _detect_enso(signal: dict) -> dict:
+    """Official NOAA CPC ENSO status — the real climate measurement."""
+    status = get_enso_status()
+    activation = status["activation"] if status["state"] == "EL_NINO" else 0.0
+    return {"activation": activation, "detail": status["detail"]}
+
+
 def detect_activation(db: Session, signal: dict) -> dict:
     """Activation 0-100 plus a human-readable explanation."""
-    if signal["detector"]["kind"] == "news":
+    kind = signal["detector"]["kind"]
+    if kind == "news":
         return _detect_news(signal)
+    if kind == "enso":
+        return _detect_enso(signal)
     return _detect_price(db, signal)
 
 

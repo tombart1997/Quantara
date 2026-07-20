@@ -30,6 +30,9 @@
             <div class="signal-main">
               <div class="signal-top">
                 <span class="signal-name">{{ signal.name }}</span>
+                @if (activationTag(signal); as tag) {
+                  <mat-chip [class]="tag.class">{{ tag.label }}</mat-chip>
+                }
                 <mat-chip>{{ signal.propagation_strength | number: '1.1-1' }}</mat-chip>
               </div>
               <div class="activation-row">
@@ -80,7 +83,7 @@
                     <mat-chip [class]="orderClass(e.order)">{{ ordinal(e.order) }} order</mat-chip>
                     @if (pricedInCrowded(e)) {
                       <mat-chip class="priced-in">
-                        priced in ~{{ e.priced_in! * 100 | number: '1.0-0' }}%
+                        priced in ~{{ e.priced_in! * 100 | number: '1.0-0' }}%{{ crowdSuffix(e) }}
                       </mat-chip>
                     }
                   </div>
@@ -88,6 +91,14 @@
                     magnitude {{ e.magnitude_pct }}% · lag {{ e.lag }} · confidence
                     {{ e.confidence * 100 | number: '1.0-0' }}%
                   </span>
+                  @if (e.positioning; as p) {
+                    <span class="positioning">
+                      COT {{ p.report_date }}: managed money net
+                      {{ p.net_contracts > 0 ? '+' : '' }}{{ p.net_contracts | number: '1.0-0' }}
+                      contracts ({{ p.net_pct_oi }}% of OI, z {{ p.z_score_52w }}, WoW
+                      {{ p.wow_change > 0 ? '+' : '' }}{{ p.wow_change | number: '1.0-0' }})
+                    </span>
+                  }
                   <span class="provenance">{{ e.provenance }}</span>
                 </div>
               }
@@ -106,7 +117,7 @@
                     <mat-chip [class]="orderClass(e.order)">{{ ordinal(e.order) }} order</mat-chip>
                     @if (pricedInCrowded(e)) {
                       <mat-chip class="priced-in">
-                        priced in ~{{ e.priced_in! * 100 | number: '1.0-0' }}%
+                        priced in ~{{ e.priced_in! * 100 | number: '1.0-0' }}%{{ crowdSuffix(e) }}
                       </mat-chip>
                     }
                   </div>
@@ -114,6 +125,14 @@
                     magnitude {{ e.magnitude_pct }}% · lag {{ e.lag }} · confidence
                     {{ e.confidence * 100 | number: '1.0-0' }}%
                   </span>
+                  @if (e.positioning; as p) {
+                    <span class="positioning">
+                      COT {{ p.report_date }}: managed money net
+                      {{ p.net_contracts > 0 ? '+' : '' }}{{ p.net_contracts | number: '1.0-0' }}
+                      contracts ({{ p.net_pct_oi }}% of OI, z {{ p.z_score_52w }}, WoW
+                      {{ p.wow_change > 0 ? '+' : '' }}{{ p.wow_change | number: '1.0-0' }})
+                    </span>
+                  }
                   <span class="provenance">{{ e.provenance }}</span>
                 </div>
               }
@@ -279,3 +298,9 @@
 } @else {
   <p class="empty">Could not load the ripple state.</p>
 }
+
+<p class="footnote">
+  Edges are curated causal hypotheses with confidence weights — not market data. Signal
+  activations, positioning (CFTC COT), and priced-in estimates use real feeds; magnitudes and lags
+  are analyst estimates.
+</p>

@@ -6,15 +6,17 @@ Run from the backend/ directory:
 from __future__ import annotations
 
 import asyncio
+import threading
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import ai, assets, dashboard, events, fx, journal, news, refresh, ripple, signals
+from app.api import ai, assets, dashboard, events, fx, journal, news, refresh, ripple, signals, weather
 from app.core.config import get_settings
 from app.services.scheduler import refresh_loop
+from app.services.sst import PRECACHE_STATE, precache
 
 settings = get_settings()
 
@@ -25,6 +27,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     task = None
     if settings.refresh_enabled:
         task = asyncio.create_task(refresh_loop())
+    # Bulk SST history download in the background — cached days are skipped,
+    # so this is expensive only the first time the app ever runs.
+    if settings.sst_precache_on_startup and not PRECACHE_STATE["running"]:
+        threading.Thread(target=precache, args=(settings.sst_precache_days,), daemon=True).start()
     yield
     if task:
         task.cancel()
@@ -47,6 +53,7 @@ app.include_router(dashboard.router)
 app.include_router(refresh.router)
 app.include_router(fx.router)
 app.include_router(ripple.router)
+app.include_router(weather.router)
 
 app.add_middleware(
     CORSMiddleware,

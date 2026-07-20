@@ -15,10 +15,14 @@ import {
   JournalEntry,
   MarketEvent,
   NewsArticle,
+  PrecacheStartResponse,
+  PrecacheStatus,
   PriceBar,
   RefreshStatus,
   RippleState,
   Signal,
+  SstGrid,
+  SstLatest,
   ThesisReviewItem,
 } from './api.models';
 
@@ -132,6 +136,26 @@ export class ApiService {
 
   runRippleScenario(activations: Record<string, number>): Observable<RippleState> {
     return this.http.post<RippleState>(`${this.base}/ripple/scenario`, { activations });
+  }
+
+  getSstLatest(): Observable<SstLatest> {
+    return this.http.get<SstLatest>(`${this.base}/weather/sst/latest`);
+  }
+
+  getSst(day: string): Observable<SstGrid> {
+    const params = new HttpParams().set('day', day);
+    return this.http.get<SstGrid>(`${this.base}/weather/sst`, { params });
+  }
+
+  precacheSst(days = 90): Observable<PrecacheStartResponse> {
+    const params = new HttpParams().set('days', days);
+    return this.http.post<PrecacheStartResponse>(`${this.base}/weather/sst/precache`, {}, {
+      params,
+    });
+  }
+
+  getPrecacheStatus(): Observable<PrecacheStatus> {
+    return this.http.get<PrecacheStatus>(`${this.base}/weather/sst/precache-status`);
   }
 
   refreshAll(): Observable<unknown> {

@@ -1,0 +1,94 @@
+<h1>Weather — Sea surface temperature</h1>
+
+<mat-card>
+  <mat-card-content>
+    @if (loadingInit()) {
+      <div class="loading"><mat-spinner diameter="40"></mat-spinner></div>
+    } @else {
+      <div class="view-toggle">
+        <mat-button-toggle-group
+          [value]="viewMode()"
+          (change)="viewMode.set($event.value)"
+          aria-label="Map view"
+        >
+          <mat-button-toggle value="anom">Anomaly</mat-button-toggle>
+          <mat-button-toggle value="abs">Absolute</mat-button-toggle>
+        </mat-button-toggle-group>
+      </div>
+      <div class="map-wrap">
+        @if (chartOptions(); as options) {
+          <div echarts [options]="options" class="chart"></div>
+        } @else {
+          <div class="loading"><mat-spinner diameter="40"></mat-spinner></div>
+        }
+        @if (loadingGrid()) {
+          <div class="grid-overlay">
+            <mat-spinner diameter="28"></mat-spinner>
+            <span>downloading from NOAA…</span>
+          </div>
+        }
+      </div>
+
+      <div class="timeline">
+        <div class="timeline-row">
+          <mat-slider min="0" max="364" step="1" [displayWith]="sliderLabel" class="slider">
+            <input matSliderThumb [value]="dayOffset()" (valueChange)="onSlider($event)" />
+          </mat-slider>
+          <mat-form-field class="date-picker" subscriptSizing="dynamic">
+            <input
+              matInput
+              type="date"
+              min="1981-09-01"
+              [max]="latest()"
+              #dateInput
+              (change)="onDatePicked(dateInput.value)"
+            />
+          </mat-form-field>
+          <button
+            mat-stroked-button
+            class="preload-btn"
+            (click)="startPrecache()"
+            [disabled]="precache()?.running"
+          >
+            <mat-icon>download</mat-icon>
+            Preload last 90 days
+          </button>
+        </div>
+        <div class="date-line">
+          <span class="selected-date">{{ displayedDate() }}</span>
+          @if (loadingGrid()) {
+            <span class="status downloading">downloading from NOAA…</span>
+          } @else if (cachedDates().has(displayedDate())) {
+            <span class="status cached">cached</span>
+          } @else {
+            <span class="status">not cached</span>
+          }
+        </div>
+        @if (precache(); as p) {
+          <div class="precache-progress">
+            <mat-progress-bar mode="determinate" [value]="precachePct()"></mat-progress-bar>
+            <span class="status">Pre-caching {{ p.done }}/{{ p.total }} days…</span>
+          </div>
+        }
+      </div>
+
+      @if (stats(); as st) {
+        <p class="stats">
+          {{ st.count | number }} ocean points ·
+          @if (st.anomView) {
+            mean {{ st.sum / st.count > 0 ? '+' : '' }}{{ (st.sum / st.count).toFixed(2) }}°C ·
+            min {{ st.min.toFixed(1) }}°C · max +{{ st.max.toFixed(1) }}°C · Δ°C vs normal ·
+          } @else {
+            min {{ st.min.toFixed(1) }}°C · max {{ st.max.toFixed(1) }}°C ·
+          }
+          {{ st.source }}
+          @if (nino34() != null) {
+            <span class="nino-stat">
+              Niño 3.4 region: {{ nino34()! > 0 ? '+' : '' }}{{ nino34()!.toFixed(2) }}°C
+            </span>
+          }
+        </p>
+      }
+    }
+  </mat-card-content>
+</mat-card>

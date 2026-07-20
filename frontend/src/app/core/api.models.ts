@@ -160,6 +160,16 @@ export interface FxMatrix {
 
 // --- Ripple Engine ------------------------------------------------------------
 
+export interface RipplePositioning {
+  ticker: string;
+  report_date: string;
+  net_contracts: number;
+  net_pct_oi: number;
+  wow_change: number;
+  z_score_52w: number;
+  source: string;
+}
+
 export interface RippleExposure {
   ticker: string;
   direction: 1 | -1;
@@ -171,6 +181,8 @@ export interface RippleExposure {
   decay: number;
   provenance: string;
   priced_in: number | null; // 0-1
+  crowd_source: string | null; // data source behind priced_in, e.g. "CFTC COT"
+  positioning?: RipplePositioning | null;
 }
 
 export interface RippleSignal {
@@ -220,4 +232,37 @@ export interface RippleState {
   signals: RippleSignal[];
   assets: RippleAssetCard[];
   portfolio: RipplePortfolio;
+}
+
+// --- Weather (NOAA OISST) -------------------------------------------------------
+
+export interface SstLatest {
+  latest: string;
+  cached: string[];
+}
+
+export interface SstGrid {
+  date: string;
+  /** 90 latitudes, ascending. */
+  lats: number[];
+  /** 180 longitudes, -180..180. */
+  lons: number[];
+  /** Row-major [lat][lon]; null = land/ice. */
+  grid: (number | null)[][];
+  /** SST anomaly vs climatology (°C), same shape/nulls as grid. */
+  anom: (number | null)[][];
+  source: string;
+}
+
+export interface PrecacheStartResponse {
+  started: boolean;
+  reason?: string;
+}
+
+export interface PrecacheStatus {
+  running: boolean;
+  done: number;
+  total: number;
+  current: string | null;
+  cached_total: number;
 }

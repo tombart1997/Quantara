@@ -20,6 +20,10 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/ripple/ripple').then((m) => m.RippleComponent),
   },
   {
+    path: 'weather',
+    loadComponent: () => import('./pages/weather/weather').then((m) => m.WeatherComponent),
+  },
+  {
     path: 'journal',
     loadComponent: () => import('./pages/journal/journal').then((m) => m.JournalComponent),
   },

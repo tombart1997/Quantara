@@ -21,6 +21,7 @@ from app.services.event_ingestion import ingest_events
 from app.services.news_ingestion import ingest_news
 from app.services.price_ingestion import refresh_prices
 from app.services.signals import run as run_signal_engine
+from app.services.sst import download_new_days
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +48,12 @@ def refresh_all(price_days: int = INCREMENTAL_PRICE_DAYS) -> dict:
                 "news": ingest_news(db),
                 "signals": len(run_signal_engine(db)),
             }
+        # Keep the SST cache current as new days get published (usually 0-1
+        # files per cycle; skips everything already cached).
+        try:
+            result["sst"] = download_new_days()
+        except Exception:
+            logger.exception("SST incremental update failed")
         STATE["last_run"] = started.isoformat(timespec="seconds")
         STATE["last_result"] = result
         logger.info("Refresh complete in %.1fs: %s",

@@ -171,4 +171,21 @@ export class RippleComponent implements OnInit {
   protected pricedInCrowded(exposure: RippleExposure): boolean {
     return exposure.priced_in != null && exposure.priced_in >= 0.7;
   }
+
+  /** Short source label for the priced-in chip, e.g. "CFTC COT" -> "COT". */
+  protected crowdSuffix(exposure: RippleExposure): string {
+    if (!exposure.crowd_source) return '';
+    return ` · ${exposure.crowd_source === 'CFTC COT' ? 'COT' : exposure.crowd_source}`;
+  }
+
+  /** Tag for the data feed behind an activation detector, if recognizable. */
+  protected activationTag(signal: RippleSignal): { label: string; class: string } | null {
+    if (signal.activation_detail.startsWith('NOAA CPC status:')) {
+      return { label: 'official data', class: 'tag-official' };
+    }
+    if (signal.activation_detail.startsWith('narrative intensity:')) {
+      return { label: 'news volume', class: 'tag-news' };
+    }
+    return null;
+  }
 }

@@ -36,6 +36,13 @@ class Settings(BaseSettings):
     refresh_enabled: bool = True
     refresh_interval_minutes: int = 30
 
+    # --- SST cache (weather page) -------------------------------------------
+    # On startup, bulk-download this many days of SST history in the
+    # background (skipped days are already cached, so restarts are cheap).
+    # Each refresh cycle also downloads any newly published day.
+    sst_precache_days: int = 365
+    sst_precache_on_startup: bool = True
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]

@@ -18,6 +18,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models import Asset, PriceHistory
+from app.services.cot import get_positioning
 from app.services.ripple import (
     EDGES,
     ORDER_DECAY,
@@ -59,13 +60,23 @@ def _actual_move(db: Session, ticker: str, days: int = 30) -> float | None:
     return (closes[0] - closes[-1]) / closes[-1] * 100
 
 
-def _priced_in(db: Session, contribution: dict) -> float | None:
-    """0..1 estimate that the expected move already happened."""
+def _priced_in(db: Session, contribution: dict) -> tuple[float | None, str | None]:
+    """(0..1 estimate that the expected move already happened, data source).
+
+    CFTC-covered futures use REAL positioning: a bullish edge is crowded
+    when managed money is already net long (z > 0), and vice versa.
+    Everything else falls back to the price-momentum heuristic, labeled.
+    """
+    cot = get_positioning(contribution["ticker"])
+    if cot is not None:
+        aligned = cot["z_score_52w"] * contribution["direction"]
+        return round(max(0.0, min(1.0, aligned / 2)), 2), "CFTC COT"
     actual = _actual_move(db, contribution["ticker"])
     if actual is None or contribution["magnitude_pct"] == 0:
-        return None
+        return None, None
     expected_dir_move = actual * contribution["direction"]
-    return round(max(0.0, min(1.0, expected_dir_move / contribution["magnitude_pct"])), 2)
+    return (round(max(0.0, min(1.0, expected_dir_move / contribution["magnitude_pct"])), 2),
+            "price momentum")
 
 
 def compute_state(db: Session, overrides: dict[str, float] | None = None) -> dict:
@@ -89,7 +100,12 @@ def compute_state(db: Session, overrides: dict[str, float] | None = None) -> dic
         if act >= ACTIVATION_THRESHOLD or overrides is not None:
             for edge in edges_for_signal(s["id"]):
                 c = _contrib(edge, act)
-                c["priced_in"] = _priced_in(db, c)
+                priced_in, crowd_source = _priced_in(db, c)
+                c["priced_in"] = priced_in
+                c["crowd_source"] = crowd_source
+                positioning = get_positioning(c["ticker"])
+                if positioning is not None:
+                    c["positioning"] = positioning
                 contributions.append(c)
         contributions.sort(key=lambda c: abs(c["impact"]), reverse=True)
         signals_out.append({

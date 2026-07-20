@@ -98,13 +98,6 @@ mat-card {
   text-align: right;
 }
 
-.activation-detail {
-  display: block;
-  font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.55);
-  margin-top: 2px;
-}
-
 .dormant {
   display: flex;
   align-items: center;
@@ -171,7 +164,9 @@ mat-card {
   font-weight: 700;
 }
 
-.exposure-meta {
+.exposure-meta,
+.positioning,
+.activation-detail {
   display: block;
   font-size: 0.78rem;
   color: rgba(255, 255, 255, 0.55);
@@ -193,7 +188,8 @@ mat-card {
   --mdc-chip-label-text-color: #fbbf24;
 }
 
-.order-3 {
+.order-3,
+.tag-news {
   --mdc-chip-label-text-color: rgba(255, 255, 255, 0.55);
 }
 
@@ -346,4 +342,18 @@ mat-card {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
+}
+
+// --- Real-data tags, positioning line, disclaimer -------------------------------
+
+.tag-official {
+  --mdc-chip-label-text-color: #6ec1ff;
+}
+
+.footnote {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.45);
+  max-width: 720px;
+  margin: 8px auto 0;
+  text-align: center;
 }

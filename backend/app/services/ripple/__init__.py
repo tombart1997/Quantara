@@ -62,7 +62,7 @@ SIGNALS: list[dict] = [
         "id": "EL_NINO",
         "name": "El Niño / climate anomaly",
         "description": "ENSO-driven weather disruption in growing regions.",
-        "detector": {"kind": "news", "query": "El Niño La Niña weather", "full_scale_articles": 15},
+        "detector": {"kind": "enso"},
     },
     {
         "id": "TARIFFS",

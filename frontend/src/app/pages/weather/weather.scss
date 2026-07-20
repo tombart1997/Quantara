@@ -1,0 +1,112 @@
+h1 {
+  margin: 0 0 16px;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  padding: 48px;
+}
+
+.map-wrap {
+  position: relative;
+}
+
+.chart {
+  height: 58vh;
+  width: 100%;
+}
+
+.grid-overlay {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(26, 36, 51, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.timeline {
+  margin-top: 12px;
+}
+
+.timeline-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.slider {
+  flex: 1;
+  min-width: 120px;
+}
+
+.date-picker {
+  width: 150px;
+}
+
+.preload-btn {
+  --mdc-outlined-button-label-text-color: #6ec1ff;
+  --mdc-outlined-button-outline-color: rgba(110, 193, 255, 0.4);
+  white-space: nowrap;
+}
+
+.precache-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+
+  mat-progress-bar {
+    flex: 1;
+  }
+}
+
+.date-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.selected-date {
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.status {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.45);
+
+  &.cached {
+    color: #6ec1ff;
+  }
+
+  &.downloading {
+    color: #f48fb1;
+  }
+}
+
+.stats {
+  margin: 12px 0 0;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.nino-stat {
+  color: #6ec1ff;
+  font-weight: 500;
+  margin-left: 12px;
+}
+
+.view-toggle {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
