@@ -130,6 +130,52 @@
       </mat-card-content>
     </mat-card>
 
+    <mat-card class="fx-card">
+      <mat-card-content>
+        <div class="fx-header">
+          <span class="fx-title">Currency Matrix</span>
+          <span class="live-dot" aria-hidden="true"></span>
+          @if (fx(); as m) {
+            <span class="fx-updated">updated {{ m.updated_at | date: 'HH:mm:ss' }}</span>
+          }
+        </div>
+        @if (fx(); as m) {
+          <table class="fx-table">
+            <thead>
+              <tr>
+                <th></th>
+                @for (col of m.currencies; track col) {
+                  <th>{{ col }}</th>
+                }
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of m.currencies; track row) {
+                <tr>
+                  <th>{{ row }}</th>
+                  @for (col of m.currencies; track col) {
+                    <td [class]="fxCellClass(m, row, col)">
+                      @if (row === col) {
+                        <span class="fx-diag">—</span>
+                      } @else {
+                        {{ formatFxRate(fxRate(m, row, col)) }}
+                        @if (fxMarker(m, row, col); as marker) {
+                          <span class="fx-marker">{{ marker }}</span>
+                        }
+                      }
+                    </td>
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+          <p class="fx-footer">1 unit of row = X units of column · Source: Yahoo Finance · delayed</p>
+        } @else {
+          <p class="empty">Loading currency matrix…</p>
+        }
+      </mat-card-content>
+    </mat-card>
+
     <mat-card>
       <mat-card-header>
         <mat-card-title>Upcoming events</mat-card-title>

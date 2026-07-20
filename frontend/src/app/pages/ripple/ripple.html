@@ -1,0 +1,281 @@
+<div class="ripple-header">
+  <h1>Ripple Engine</h1>
+  <span class="spacer"></span>
+  @if (scenarioMode()) {
+    <span class="scenario-banner">SCENARIO MODE</span>
+    <button mat-stroked-button class="ai-btn" (click)="loadLive()">
+      <mat-icon>undo</mat-icon>
+      Back to live
+    </button>
+  }
+</div>
+
+@if (loading()) {
+  <div class="loading"><mat-spinner diameter="40"></mat-spinner></div>
+} @else if (state(); as s) {
+  <!-- (a) Active signals -->
+  <mat-card>
+    <mat-card-header>
+      <mat-card-title>Active signals</mat-card-title>
+      <mat-card-subtitle>Click a signal to inspect its exposure below.</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      @if (activeSignals().length) {
+        @for (signal of activeSignals(); track signal.id) {
+          <div
+            class="signal-row"
+            [class.selected]="selectedSignalId() === signal.id"
+            (click)="selectSignal(signal.id)"
+          >
+            <div class="signal-main">
+              <div class="signal-top">
+                <span class="signal-name">{{ signal.name }}</span>
+                <mat-chip>{{ signal.propagation_strength | number: '1.1-1' }}</mat-chip>
+              </div>
+              <div class="activation-row">
+                <mat-progress-bar mode="determinate" [value]="signal.activation">
+                </mat-progress-bar>
+                <span class="activation-value">{{ signal.activation | number: '1.0-0' }}%</span>
+              </div>
+              <span class="activation-detail">{{ signal.activation_detail }}</span>
+            </div>
+          </div>
+        }
+      } @else {
+        <p class="empty">No active signals.</p>
+      }
+
+      @if (dormantSignals().length) {
+        <div class="dormant">
+          <span class="dormant-label">Dormant</span>
+          @for (signal of dormantSignals(); track signal.id) {
+            <span class="dormant-chip" [title]="signal.description">{{ signal.name }}</span>
+          }
+        </div>
+      }
+    </mat-card-content>
+  </mat-card>
+
+  <!-- (b) Signal exposure view -->
+  <mat-card>
+    <mat-card-header>
+      <mat-card-title>
+        {{ selectedSignal() ? selectedSignal()!.name + ' — exposure' : 'Signal exposure' }}
+      </mat-card-title>
+      @if (selectedSignal(); as sel) {
+        <mat-card-subtitle>{{ sel.description }}</mat-card-subtitle>
+      }
+    </mat-card-header>
+    <mat-card-content>
+      @if (selectedSignal()) {
+        <div class="exposure-columns">
+          <div class="exposure-col">
+            <h3 class="col-heading positive">Beneficiaries</h3>
+            @if (beneficiaries().length) {
+              @for (e of beneficiaries(); track e.ticker) {
+                <div class="exposure-row" [class.higher-order]="e.order > 1">
+                  <div class="exposure-top">
+                    <a [routerLink]="['/assets', e.ticker]" class="ticker">{{ e.ticker }}</a>
+                    <span class="impact positive">{{ signed(e.impact) }}</span>
+                    <mat-chip [class]="orderClass(e.order)">{{ ordinal(e.order) }} order</mat-chip>
+                    @if (pricedInCrowded(e)) {
+                      <mat-chip class="priced-in">
+                        priced in ~{{ e.priced_in! * 100 | number: '1.0-0' }}%
+                      </mat-chip>
+                    }
+                  </div>
+                  <span class="exposure-meta">
+                    magnitude {{ e.magnitude_pct }}% · lag {{ e.lag }} · confidence
+                    {{ e.confidence * 100 | number: '1.0-0' }}%
+                  </span>
+                  <span class="provenance">{{ e.provenance }}</span>
+                </div>
+              }
+            } @else {
+              <p class="empty">No beneficiaries.</p>
+            }
+          </div>
+          <div class="exposure-col">
+            <h3 class="col-heading negative">Victims</h3>
+            @if (victims().length) {
+              @for (e of victims(); track e.ticker) {
+                <div class="exposure-row" [class.higher-order]="e.order > 1">
+                  <div class="exposure-top">
+                    <a [routerLink]="['/assets', e.ticker]" class="ticker">{{ e.ticker }}</a>
+                    <span class="impact negative">{{ signed(e.impact) }}</span>
+                    <mat-chip [class]="orderClass(e.order)">{{ ordinal(e.order) }} order</mat-chip>
+                    @if (pricedInCrowded(e)) {
+                      <mat-chip class="priced-in">
+                        priced in ~{{ e.priced_in! * 100 | number: '1.0-0' }}%
+                      </mat-chip>
+                    }
+                  </div>
+                  <span class="exposure-meta">
+                    magnitude {{ e.magnitude_pct }}% · lag {{ e.lag }} · confidence
+                    {{ e.confidence * 100 | number: '1.0-0' }}%
+                  </span>
+                  <span class="provenance">{{ e.provenance }}</span>
+                </div>
+              }
+            } @else {
+              <p class="empty">No victims.</p>
+            }
+          </div>
+        </div>
+      } @else {
+        <p class="empty">Select a signal above to see who it hits and who it helps.</p>
+      }
+    </mat-card-content>
+  </mat-card>
+
+  <!-- (c) Asset score cards -->
+  <mat-card>
+    <mat-card-header>
+      <mat-card-title>Asset scores</mat-card-title>
+      <mat-card-subtitle>Top 10 by absolute net score, with full decomposition.</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      @if (topAssets().length) {
+        <div class="asset-grid">
+          @for (asset of topAssets(); track asset.ticker) {
+            <div class="asset-card">
+              <div class="asset-top">
+                <a [routerLink]="['/assets', asset.ticker]" class="ticker">{{ asset.ticker }}</a>
+                <span
+                  class="net-score"
+                  [class.positive]="asset.net_score > 0"
+                  [class.negative]="asset.net_score < 0"
+                >
+                  {{ signed(asset.net_score) }}
+                </span>
+              </div>
+              <span class="asset-name">{{ asset.name }}</span>
+              <div class="asset-flags">
+                <span class="dominant">dominant: {{ asset.dominant_signal }}</span>
+                @if (asset.conflict) {
+                  <span class="conflict-badge">conflict</span>
+                }
+              </div>
+              <div class="contributions">
+                @for (c of asset.contributions; track c.signal_id) {
+                  <div class="contribution" [class.positive]="c.impact > 0" [class.negative]="c.impact < 0">
+                    <span class="marker">{{ c.impact > 0 ? '▲' : '▼' }}</span>
+                    <span class="contrib-impact">{{ signed(c.impact) }}</span>
+                    <span class="contrib-name">{{ c.signal_name }}</span>
+                    <span class="contrib-meta">
+                      ({{ ordinal(c.order) }} order, lag {{ c.lag }}, conf
+                      {{ c.confidence * 100 | number: '1.0-0' }}%)
+                    </span>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      } @else {
+        <p class="empty">No asset scores.</p>
+      }
+    </mat-card-content>
+  </mat-card>
+
+  <!-- (d) Scenario simulator -->
+  <mat-card>
+    <mat-card-content>
+      <mat-expansion-panel class="scenario-panel">
+        <mat-expansion-panel-header>
+          <mat-panel-title><mat-icon>tune</mat-icon> Scenario simulator</mat-panel-title>
+          <mat-panel-description>Force signals to a level and see the ripples.</mat-panel-description>
+        </mat-expansion-panel-header>
+
+        @for (signal of s.signals; track signal.id) {
+          <div class="scenario-row">
+            <mat-checkbox
+              [checked]="scenarioSelection().has(signal.id)"
+              (change)="toggleScenarioSignal(signal.id, $event.checked)"
+            >
+              {{ signal.name }}
+            </mat-checkbox>
+            <mat-slider
+              class="scenario-slider"
+              min="0"
+              max="100"
+              step="5"
+              discrete
+              [disabled]="!scenarioSelection().has(signal.id)"
+            >
+              <input
+                matSliderThumb
+                [value]="scenarioValues()[signal.id] ?? 50"
+                (valueChange)="setScenarioValue(signal.id, $event)"
+              />
+            </mat-slider>
+            <span class="scenario-value">{{ scenarioValues()[signal.id] ?? 50 }}%</span>
+          </div>
+        }
+
+        <button
+          mat-flat-button
+          color="primary"
+          (click)="runScenario()"
+          [disabled]="!canRunScenario()"
+        >
+          <mat-icon>play_arrow</mat-icon>
+          {{ scenarioRunning() ? 'Running…' : 'Run scenario' }}
+        </button>
+      </mat-expansion-panel>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- (e) Portfolio mirror -->
+  <mat-card>
+    <mat-card-header>
+      <mat-card-title>Portfolio mirror</mat-card-title>
+      <mat-card-subtitle>What your watchlist is implicitly betting on.</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      @if (s.portfolio.positions.length) {
+        <div class="bets">
+          <span class="bets-label">Your implicit bets</span>
+          @for (bet of s.portfolio.implicit_bets; track bet.signal) {
+            <span
+              class="bet-chip"
+              [class.positive]="bet.net_impact > 0"
+              [class.negative]="bet.net_impact < 0"
+            >
+              {{ bet.signal }} {{ signed(bet.net_impact) }}
+            </span>
+          }
+        </div>
+        <div class="positions">
+          @for (pos of s.portfolio.positions; track pos.ticker) {
+            <div class="asset-card compact">
+              <div class="asset-top">
+                <a [routerLink]="['/assets', pos.ticker]" class="ticker">{{ pos.ticker }}</a>
+                <span
+                  class="net-score"
+                  [class.positive]="pos.net_score > 0"
+                  [class.negative]="pos.net_score < 0"
+                >
+                  {{ signed(pos.net_score) }}
+                </span>
+              </div>
+              <span class="asset-name">{{ pos.name }}</span>
+              <div class="asset-flags">
+                <span class="dominant">dominant: {{ pos.dominant_signal }}</span>
+                @if (pos.conflict) {
+                  <span class="conflict-badge">conflict</span>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      } @else {
+        <p class="empty">
+          Watchlist is empty — implicit bets appear here once you follow assets.
+        </p>
+      }
+    </mat-card-content>
+  </mat-card>
+} @else {
+  <p class="empty">Could not load the ripple state.</p>
+}

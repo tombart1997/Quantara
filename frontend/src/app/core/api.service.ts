@@ -9,6 +9,7 @@ import {
   Asset,
   DashboardResponse,
   EventCreate,
+  FxMatrix,
   Indicator,
   JournalCreate,
   JournalEntry,
@@ -16,6 +17,7 @@ import {
   NewsArticle,
   PriceBar,
   RefreshStatus,
+  RippleState,
   Signal,
   ThesisReviewItem,
 } from './api.models';
@@ -118,6 +120,18 @@ export class ApiService {
   getSparklines(days = 30): Observable<Record<string, number[]>> {
     const params = new HttpParams().set('days', days);
     return this.http.get<Record<string, number[]>>(`${this.base}/assets/sparklines`, { params });
+  }
+
+  getFxMatrix(): Observable<FxMatrix> {
+    return this.http.get<FxMatrix>(`${this.base}/fx/matrix`);
+  }
+
+  getRippleState(): Observable<RippleState> {
+    return this.http.get<RippleState>(`${this.base}/ripple/state`);
+  }
+
+  runRippleScenario(activations: Record<string, number>): Observable<RippleState> {
+    return this.http.post<RippleState>(`${this.base}/ripple/scenario`, { activations });
   }
 
   refreshAll(): Observable<unknown> {

@@ -16,6 +16,10 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/calendar/calendar').then((m) => m.CalendarComponent),
   },
   {
+    path: 'ripple',
+    loadComponent: () => import('./pages/ripple/ripple').then((m) => m.RippleComponent),
+  },
+  {
     path: 'journal',
     loadComponent: () => import('./pages/journal/journal').then((m) => m.JournalComponent),
   },

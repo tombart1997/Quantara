@@ -12,7 +12,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import ai, assets, dashboard, events, journal, news, refresh, signals
+from app.api import ai, assets, dashboard, events, fx, journal, news, refresh, ripple, signals
 from app.core.config import get_settings
 from app.services.scheduler import refresh_loop
 
@@ -45,6 +45,8 @@ app.include_router(journal.router)
 app.include_router(signals.router)
 app.include_router(dashboard.router)
 app.include_router(refresh.router)
+app.include_router(fx.router)
+app.include_router(ripple.router)
 
 app.add_middleware(
     CORSMiddleware,

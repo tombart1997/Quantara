@@ -1,0 +1,349 @@
+.ripple-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+
+  h1 {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.92);
+  }
+}
+
+.spacer {
+  flex: 1;
+}
+
+.scenario-banner {
+  background: #f48fb1;
+  color: #2a1017;
+  border-radius: 12px;
+  padding: 2px 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+.ai-btn {
+  --mdc-outlined-button-label-text-color: #6ec1ff;
+  --mdc-outlined-button-outline-color: rgba(110, 193, 255, 0.4);
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  padding: 48px;
+}
+
+mat-card {
+  margin-bottom: 16px;
+}
+
+.empty {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.positive {
+  color: #4ade80;
+}
+
+.negative {
+  color: #f87171;
+}
+
+// --- (a) Active signals --------------------------------------------------------
+
+.signal-row {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  margin-bottom: 6px;
+
+  &:hover {
+    background: rgba(110, 193, 255, 0.06);
+  }
+
+  &.selected {
+    border-color: rgba(110, 193, 255, 0.5);
+    background: rgba(110, 193, 255, 0.08);
+  }
+}
+
+.signal-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.signal-name {
+  font-weight: 500;
+}
+
+.activation-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  mat-progress-bar {
+    flex: 1;
+  }
+}
+
+.activation-value {
+  font-size: 0.8rem;
+  color: #6ec1ff;
+  min-width: 36px;
+  text-align: right;
+}
+
+.activation-detail {
+  display: block;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.55);
+  margin-top: 2px;
+}
+
+.dormant {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.dormant-label {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.45);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.dormant-chip {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 12px;
+  padding: 2px 10px;
+}
+
+// --- (b) Exposure view -----------------------------------------------------------
+
+.exposure-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 20px;
+}
+
+.col-heading {
+  margin: 0 0 8px;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.exposure-row {
+  padding: 8px 10px;
+  border-radius: 6px;
+  margin-bottom: 6px;
+  background: #141c28;
+
+  &.higher-order {
+    border-left: 3px solid #6ec1ff;
+  }
+}
+
+.exposure-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ticker {
+  font-weight: 500;
+}
+
+.impact {
+  font-weight: 700;
+}
+
+.exposure-meta {
+  display: block;
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.55);
+  margin-top: 2px;
+}
+
+.provenance {
+  display: block;
+  font-size: 0.78rem;
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.order-1 {
+  --mdc-chip-label-text-color: #6ec1ff;
+}
+
+.order-2 {
+  --mdc-chip-label-text-color: #fbbf24;
+}
+
+.order-3 {
+  --mdc-chip-label-text-color: rgba(255, 255, 255, 0.55);
+}
+
+.priced-in {
+  --mdc-chip-label-text-color: #fbbf24;
+  --mdc-chip-outline-color: #fbbf24;
+}
+
+// --- (c) Asset score cards ---------------------------------------------------
+
+.asset-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 12px;
+}
+
+.asset-card {
+  background: #141c28;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 8px;
+  padding: 12px;
+
+  &.compact {
+    min-width: 220px;
+  }
+}
+
+.asset-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.net-score {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.asset-name {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.asset-flags {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0;
+}
+
+.dominant {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.conflict-badge {
+  background: #f48fb1;
+  color: #2a1017;
+  border-radius: 10px;
+  padding: 1px 8px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.contributions {
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  padding-top: 6px;
+  margin-top: 4px;
+}
+
+.contribution {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 0.8rem;
+  padding: 1px 0;
+
+  .marker {
+    font-size: 0.65rem;
+  }
+
+  .contrib-impact {
+    font-weight: 600;
+  }
+
+  .contrib-name {
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  .contrib-meta {
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 0.72rem;
+  }
+}
+
+// --- (d) Scenario simulator ----------------------------------------------------
+
+.scenario-panel {
+  background: transparent;
+  box-shadow: none;
+}
+
+.scenario-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+
+  mat-checkbox {
+    min-width: 240px;
+  }
+}
+
+.scenario-slider {
+  flex: 1;
+  min-width: 120px;
+}
+
+.scenario-value {
+  min-width: 40px;
+  text-align: right;
+  font-size: 0.85rem;
+  color: #6ec1ff;
+}
+
+// --- (e) Portfolio mirror -----------------------------------------------------
+
+.bets {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.bets-label {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin-right: 4px;
+}
+
+.bet-chip {
+  border: 1px solid currentColor;
+  border-radius: 14px;
+  padding: 3px 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.positions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}

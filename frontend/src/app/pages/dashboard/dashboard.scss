@@ -127,6 +127,123 @@ mat-panel-title {
   margin-bottom: 4px;
 }
 
+// --- FX matrix ---------------------------------------------------------------
+
+.fx-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.fx-title {
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.fx-updated {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #6ec1ff;
+  animation: live-pulse 2s ease-in-out infinite;
+}
+
+@keyframes live-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+
+.fx-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+
+  th,
+  td {
+    padding: 3px 6px;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  thead th {
+    color: #6ec1ff;
+    font-weight: 500;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+  }
+
+  tbody th {
+    color: #6ec1ff;
+    font-weight: 500;
+    text-align: left;
+  }
+
+  td {
+    color: rgba(255, 255, 255, 0.75);
+    border-radius: 3px;
+  }
+}
+
+.fx-diag {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.fx-up {
+  color: #4ade80;
+}
+
+.fx-down {
+  color: #f87171;
+}
+
+.fx-marker {
+  font-size: 0.65rem;
+  margin-left: 3px;
+}
+
+.flash-up {
+  animation: flash-up 0.6s ease-out;
+}
+
+.flash-down {
+  animation: flash-down 0.6s ease-out;
+}
+
+@keyframes flash-up {
+  from {
+    background: rgba(74, 222, 128, 0.22);
+  }
+  to {
+    background: transparent;
+  }
+}
+
+@keyframes flash-down {
+  from {
+    background: rgba(248, 113, 113, 0.22);
+  }
+  to {
+    background: transparent;
+  }
+}
+
+.fx-footer {
+  margin: 10px 0 0;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.45);
+}
+
 // Subtle light-blue tint when hovering clickable explorer rows.
 a[mat-list-item]:hover {
   background: rgba(110, 193, 255, 0.07);

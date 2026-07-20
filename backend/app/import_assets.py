@@ -109,6 +109,14 @@ UNIVERSE: list[dict] = [
     dict(ticker="UGL", name="ProShares Ultra Gold (2x)", exchange="NYSE Arca",
          asset_type=AssetType.ETF, sector="Leveraged Metals", region="US",
          leverage=2.0, news_keywords="gold price"),
+
+    # --- Rates & FX (signal detectors for the Ripple Engine) ------------------
+    dict(ticker="DXY", name="US Dollar Index", exchange="ICE",
+         asset_type=AssetType.INDEX, sector="FX", region="US",
+         news_keywords="dollar index DXY"),
+    dict(ticker="TNX", name="10-Year Treasury Yield", exchange="CBOE",
+         asset_type=AssetType.INDEX, sector="Rates", region="US",
+         news_keywords="10 year treasury yield"),
 ]
 
 

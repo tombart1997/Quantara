@@ -147,3 +147,77 @@ export interface RefreshStatus {
   last_result: unknown;
   running: boolean;
 }
+
+export interface FxMatrix {
+  currencies: string[];
+  /** rates[row][col] = units of COL per 1 ROW. */
+  rates: Record<string, Record<string, number>>;
+  /** Daily % change per cross, same shape as rates. */
+  changes_pct: Record<string, Record<string, number>>;
+  missing: string[];
+  updated_at: string;
+}
+
+// --- Ripple Engine ------------------------------------------------------------
+
+export interface RippleExposure {
+  ticker: string;
+  direction: 1 | -1;
+  impact: number;
+  magnitude_pct: number;
+  lag: string;
+  confidence: number; // 0-1
+  order: 1 | 2 | 3;
+  decay: number;
+  provenance: string;
+  priced_in: number | null; // 0-1
+}
+
+export interface RippleSignal {
+  id: string;
+  name: string;
+  description: string;
+  activation: number; // 0-100
+  activation_detail: string;
+  active: boolean;
+  propagation_strength: number;
+  exposure: RippleExposure[];
+}
+
+export interface RippleContribution {
+  signal_id: string;
+  signal_name: string;
+  activation: number;
+  impact: number;
+  order: number;
+  lag: string;
+  confidence: number;
+  magnitude_pct: number;
+  provenance: string;
+}
+
+export interface RippleAssetCard {
+  ticker: string;
+  name: string;
+  net_score: number;
+  dominant_signal: string;
+  conflict: boolean;
+  contributions: RippleContribution[];
+}
+
+export interface RippleImplicitBet {
+  signal: string;
+  net_impact: number;
+}
+
+export interface RipplePortfolio {
+  positions: RippleAssetCard[];
+  implicit_bets: RippleImplicitBet[];
+}
+
+export interface RippleState {
+  mode: string; // 'live' | 'scenario'
+  signals: RippleSignal[];
+  assets: RippleAssetCard[];
+  portfolio: RipplePortfolio;
+}

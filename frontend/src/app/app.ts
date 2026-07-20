@@ -36,6 +36,7 @@ export class App {
 
   protected readonly navItems: NavItem[] = [
     { label: 'Dashboard', icon: 'dashboard', route: '/dashboard' },
+    { label: 'Ripple', icon: 'blur_circular', route: '/ripple' },
     { label: 'Calendar', icon: 'event', route: '/calendar' },
     { label: 'Journal', icon: 'edit_note', route: '/journal' },
   ];

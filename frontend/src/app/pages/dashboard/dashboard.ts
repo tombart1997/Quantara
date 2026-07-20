@@ -1,8 +1,8 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
-import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
-import { Subject, interval, startWith, switchMap, takeWhile } from 'rxjs';
+import { EMPTY, Subject, catchError, interval, startWith, switchMap, takeWhile } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
@@ -16,7 +16,7 @@ import { MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { ApiService } from '../../core/api.service';
-import { Asset, AssetType, EventType, RefreshStatus, Signal } from '../../core/api.models';
+import { Asset, AssetType, EventType, FxMatrix, RefreshStatus, Signal } from '../../core/api.models';
 import { SparklineComponent } from '../../shared/sparkline';
 
 interface AssetGroup {
@@ -54,7 +54,7 @@ const ASSET_TYPE_META: Record<AssetType, { label: string; icon: string }> = {
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent implements OnInit, OnDestroy {
   private readonly api = inject(ApiService);
   private readonly snackBar = inject(MatSnackBar);
   private readonly destroyRef = inject(DestroyRef);
@@ -80,7 +80,75 @@ export class DashboardComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadStatus();
+    // FX matrix: poll every 30s; on failure keep showing the last good matrix.
+    interval(30_000)
+      .pipe(
+        startWith(0),
+        takeUntilDestroyed(this.destroyRef),
+        switchMap(() => this.api.getFxMatrix().pipe(catchError(() => EMPTY))),
+      )
+      .subscribe((matrix) => this.onFxMatrix(matrix));
   }
+
+  // --- FX matrix ------------------------------------------------------------
+
+  protected readonly fx = signal<FxMatrix | null>(null);
+  /** Cells ("ROW:COL") currently flashing, with the direction of the change. */
+  protected readonly fxFlash = signal<Record<string, 'up' | 'down'>>({});
+  private prevFxRates: Record<string, Record<string, number>> = {};
+  private flashTimer: ReturnType<typeof setTimeout> | null = null;
+
+  private onFxMatrix(matrix: FxMatrix): void {
+    const changes: Record<string, 'up' | 'down'> = {};
+    for (const row of matrix.currencies) {
+      for (const col of matrix.currencies) {
+        if (row === col) continue;
+        const prev = this.prevFxRates[row]?.[col];
+        const next = matrix.rates[row]?.[col];
+        if (prev !== undefined && next !== undefined && prev !== next) {
+          changes[`${row}:${col}`] = next > prev ? 'up' : 'down';
+        }
+      }
+    }
+    this.prevFxRates = matrix.rates;
+    this.fx.set(matrix);
+    if (Object.keys(changes).length > 0) {
+      this.fxFlash.set(changes);
+      if (this.flashTimer) clearTimeout(this.flashTimer);
+      this.flashTimer = setTimeout(() => this.fxFlash.set({}), 600);
+    }
+  }
+
+  ngOnDestroy(): void {
+    if (this.flashTimer) clearTimeout(this.flashTimer);
+  }
+
+  protected fxRate(m: FxMatrix, row: string, col: string): number | undefined {
+    return m.rates[row]?.[col];
+  }
+
+  protected formatFxRate(value: number | undefined): string {
+    if (value === undefined) return '—';
+    return value >= 100 ? value.toFixed(2) : value.toFixed(4);
+  }
+
+  protected fxMarker(m: FxMatrix, row: string, col: string): string {
+    const change = m.changes_pct[row]?.[col];
+    if (change == null || change === 0) return '';
+    return change > 0 ? '▲' : '▼';
+  }
+
+  protected fxCellClass(m: FxMatrix, row: string, col: string): string {
+    const classes: string[] = [];
+    const change = m.changes_pct[row]?.[col];
+    if (change != null && change > 0) classes.push('fx-up');
+    if (change != null && change < 0) classes.push('fx-down');
+    const flash = this.fxFlash()[`${row}:${col}`];
+    if (flash) classes.push(flash === 'up' ? 'flash-up' : 'flash-down');
+    return classes.join(' ');
+  }
+
+  // --- Refresh status ---------------------------------------------------------
 
   private loadStatus(): void {
     this.api

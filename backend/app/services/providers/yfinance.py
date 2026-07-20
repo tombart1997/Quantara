@@ -38,6 +38,8 @@ YAHOO_SYMBOLS = {
     "STOXX50E": "^STOXX50E",  # Euro Stoxx 50
     "HSI": "^HSI",     # Hang Seng
     "VIX": "^VIX",     # CBOE volatility index
+    "DXY": "DX-Y.NYB", # US dollar index
+    "TNX": "^TNX",     # 10-year Treasury yield
 }
 
 
