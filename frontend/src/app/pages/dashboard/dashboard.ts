@@ -24,6 +24,7 @@ interface AssetGroup {
   label: string;
   icon: string;
   assets: Asset[];
+  leveragedAssets: Asset[];
 }
 
 const ASSET_TYPE_META: Record<AssetType, { label: string; icon: string }> = {
@@ -31,6 +32,14 @@ const ASSET_TYPE_META: Record<AssetType, { label: string; icon: string }> = {
   COMMODITY: { label: 'Commodities', icon: 'eco' },
   ETF: { label: 'ETFs', icon: 'account_balance' },
   INDEX: { label: 'Indexes', icon: 'public' },
+};
+
+/** Leveraged products belong to the class of what they track, not "ETF". */
+const LEVERAGED_SECTOR_PARENT: Record<string, AssetType> = {
+  'Leveraged Single Stock': 'STOCK',
+  'Leveraged Broad Market': 'INDEX',
+  'Leveraged Energy': 'COMMODITY',
+  'Leveraged Metals': 'COMMODITY',
 };
 
 @Component({
@@ -80,8 +89,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadStatus();
-    // FX matrix: poll every 30s; on failure keep showing the last good matrix.
-    interval(30_000)
+    // FX matrix: poll every second; on failure keep showing the last good
+    // matrix. The backend caches 5s, so this is live without hammering Yahoo.
+    interval(1_000)
       .pipe(
         startWith(0),
         takeUntilDestroyed(this.destroyRef),
@@ -93,20 +103,25 @@ export class DashboardComponent implements OnInit, OnDestroy {
   // --- FX matrix ------------------------------------------------------------
 
   protected readonly fx = signal<FxMatrix | null>(null);
-  /** Cells ("ROW:COL") currently flashing, with the direction of the change. */
-  protected readonly fxFlash = signal<Record<string, 'up' | 'down'>>({});
+  /** Cells ("ROW:COL") currently flashing: direction + 0..1 intensity. */
+  protected readonly fxFlash = signal<Record<string, { dir: 'up' | 'down'; intensity: number }>>({});
   private prevFxRates: Record<string, Record<string, number>> = {};
   private flashTimer: ReturnType<typeof setTimeout> | null = null;
 
   private onFxMatrix(matrix: FxMatrix): void {
-    const changes: Record<string, 'up' | 'down'> = {};
+    const changes: Record<string, { dir: 'up' | 'down'; intensity: number }> = {};
     for (const row of matrix.currencies) {
       for (const col of matrix.currencies) {
         if (row === col) continue;
         const prev = this.prevFxRates[row]?.[col];
         const next = matrix.rates[row]?.[col];
         if (prev !== undefined && next !== undefined && prev !== next) {
-          changes[`${row}:${col}`] = next > prev ? 'up' : 'down';
+          // Intensity: 0.05% move between polls = full saturation.
+          const deltaPct = Math.abs(next / prev - 1) * 100;
+          changes[`${row}:${col}`] = {
+            dir: next > prev ? 'up' : 'down',
+            intensity: Math.min(1, deltaPct / 0.05),
+          };
         }
       }
     }
@@ -115,7 +130,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     if (Object.keys(changes).length > 0) {
       this.fxFlash.set(changes);
       if (this.flashTimer) clearTimeout(this.flashTimer);
-      this.flashTimer = setTimeout(() => this.fxFlash.set({}), 600);
+      this.flashTimer = setTimeout(() => this.fxFlash.set({}), 900);
     }
   }
 
@@ -143,9 +158,17 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const change = m.changes_pct[row]?.[col];
     if (change != null && change > 0) classes.push('fx-up');
     if (change != null && change < 0) classes.push('fx-down');
-    const flash = this.fxFlash()[`${row}:${col}`];
-    if (flash) classes.push(flash === 'up' ? 'flash-up' : 'flash-down');
     return classes.join(' ');
+  }
+
+  /** Flash background: direction color, alpha scaled by move intensity. */
+  protected fxCellBg(row: string, col: string): string | null {
+    const flash = this.fxFlash()[`${row}:${col}`];
+    if (!flash) return null;
+    const alpha = 0.1 + 0.35 * flash.intensity;
+    return flash.dir === 'up'
+      ? `rgba(74, 222, 128, ${alpha.toFixed(2)})`
+      : `rgba(248, 113, 113, ${alpha.toFixed(2)})`;
   }
 
   // --- Refresh status ---------------------------------------------------------
@@ -218,13 +241,21 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   protected readonly assetGroups = computed<AssetGroup[]>(() => {
     const assets = this.allAssets();
+    // Leveraged products leave their asset_type group and join the class of
+    // their underlying (e.g. UCO is an ETF structurally, a leveraged
+    // commodity conceptually).
+    const parentOf = (a: Asset): AssetType =>
+      a.leverage !== 1 && a.sector && LEVERAGED_SECTOR_PARENT[a.sector]
+        ? LEVERAGED_SECTOR_PARENT[a.sector]
+        : a.asset_type;
     return (Object.keys(ASSET_TYPE_META) as AssetType[])
       .map((type) => ({
         type,
         ...ASSET_TYPE_META[type],
-        assets: assets.filter((a) => a.asset_type === type),
+        assets: assets.filter((a) => a.leverage === 1 && a.asset_type === type),
+        leveragedAssets: assets.filter((a) => a.leverage !== 1 && parentOf(a) === type),
       }))
-      .filter((group) => group.assets.length > 0);
+      .filter((group) => group.assets.length > 0 || group.leveragedAssets.length > 0);
   });
 
   protected readonly watchlistColumns = ['ticker', 'name', 'latest_close', 'change_pct', 'watchlist'];

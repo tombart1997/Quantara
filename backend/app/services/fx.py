@@ -27,7 +27,7 @@ CURRENCIES: dict[str, str | None] = {
     "CNY": "CNY=X",
 }
 
-CACHE_TTL_SECONDS = 60
+CACHE_TTL_SECONDS = 5  # UI polls every second; Yahoo only gets hit every 5s
 _CACHE: dict = {"matrix": None, "fetched_at": 0.0}
 
 

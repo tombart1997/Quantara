@@ -58,6 +58,20 @@ h1 {
   font-size: 0.68rem;
   color: rgba(255, 255, 255, 0.45);
   white-space: nowrap;
+  cursor: pointer;
+
+  &:hover {
+    color: #6ec1ff;
+  }
+}
+
+.step-btn {
+  flex: none;
+  color: rgba(255, 255, 255, 0.6);
+
+  &:hover {
+    color: #6ec1ff;
+  }
 }
 
 .chart {

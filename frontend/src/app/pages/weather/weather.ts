@@ -92,15 +92,16 @@ export class WeatherComponent implements OnInit {
                     'Aug.', 'Sep.', 'Oct.', 'Nov.', 'Dec.'];
     const end = new Date(`${latest}T00:00:00Z`);
     const cursor = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), 1));
-    const ticks: { pct: number; label: string; showLabel: boolean }[] = [];
+    const ticks: { pct: number; label: string; offset: number; showLabel: boolean }[] = [];
     let i = 0;
     while (cursor <= end) {
       const offset = Math.round((end.getTime() - cursor.getTime()) / 86_400_000);
       if (offset >= 0 && offset <= 944) {
         ticks.push({
-          pct: (offset / 944) * 100,
+          pct: ((944 - offset) / 944) * 100,
           label: `${MONTHS[cursor.getUTCMonth()]} ${cursor.getUTCFullYear()}`,
-          showLabel: i % 3 === 0,
+          offset,
+          showLabel: i % 2 === 0,
         });
         i++;
       }
@@ -407,10 +408,39 @@ export class WeatherComponent implements OnInit {
       });
   }
 
+  /** Snap-to-end tolerance: ~6 days. Pixel precision at 945 steps ≈ 1.4
+      days/px, so near-extreme drags land exactly on the ends. */
+  private static readonly END_SNAP = 6;
+
   protected onSlider(value: number): void {
-    this.dayOffset.set(value);
+    // Slider runs left=oldest -> right=newest (timeline convention);
+    // dayOffset stays days-back-from-latest internally, so invert.
+    if (value >= 944 - WeatherComponent.END_SNAP) value = 944;
+    else if (value <= WeatherComponent.END_SNAP) value = 0;
+    this.dayOffset.set(944 - value);
     this.dateRequests.next(this.selectedDate());
   }
+
+  protected jumpToLatest(): void {
+    this.dayOffset.set(0);
+    this.dateRequests.next(this.selectedDate());
+  }
+
+  /** Deterministic single-day step (delta in slider days, + = newer). */
+  protected stepDays(delta: number): void {
+    const next = Math.min(944, Math.max(0, this.dayOffset() - delta));
+    this.dayOffset.set(next);
+    this.dateRequests.next(this.selectedDate());
+  }
+
+  /** Jump straight to a ruler tick (offset = days back from latest). */
+  protected jumpToOffset(offset: number): void {
+    this.dayOffset.set(offset);
+    this.dateRequests.next(this.selectedDate());
+  }
+
+  /** Slider position for the current offset (inverted: 0 = oldest). */
+  protected readonly sliderValue = computed(() => 944 - this.dayOffset());
 
   protected onDatePicked(value: string): void {
     if (!value) return;
@@ -463,7 +493,7 @@ export class WeatherComponent implements OnInit {
     this.cachedDates.set(new Set(info.cached));
   }
 
-  protected readonly sliderLabel = (value: number): string => this.dateForOffset(value);
+  protected readonly sliderLabel = (value: number): string => this.dateForOffset(944 - value);
 
   private dateForOffset(offset: number): string {
     const latest = this.latest();

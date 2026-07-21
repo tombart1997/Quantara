@@ -64,14 +64,25 @@
           @for (t of rulerTicks(); track t.pct) {
             <span class="tick" [style.left.%]="t.pct"></span>
             @if (t.showLabel) {
-              <span class="tick-label" [style.left.%]="t.pct">{{ t.label }}</span>
+              <span
+                class="tick-label"
+                [style.left.%]="t.pct"
+                (click)="jumpToOffset(t.offset)"
+                >{{ t.label }}</span
+              >
             }
           }
         </div>
         <div class="timeline-row">
+          <button mat-icon-button class="step-btn" (click)="stepDays(-1)" aria-label="One day back">
+            <mat-icon>chevron_left</mat-icon>
+          </button>
           <mat-slider min="0" max="944" step="1" [displayWith]="sliderLabel" class="slider">
-            <input matSliderThumb [value]="dayOffset()" (valueChange)="onSlider($event)" />
+            <input matSliderThumb [value]="sliderValue()" (valueChange)="onSlider($event)" />
           </mat-slider>
+          <button mat-icon-button class="step-btn" (click)="stepDays(1)" aria-label="One day forward">
+            <mat-icon>chevron_right</mat-icon>
+          </button>
           <mat-form-field class="date-picker" subscriptSizing="dynamic">
             <input
               matInput
@@ -82,6 +93,13 @@
               (input)="onDatePicked(dateInput.value)"
             />
           </mat-form-field>
+          <button
+            mat-stroked-button
+            class="preload-btn"
+            (click)="jumpToLatest()"
+          >
+            Latest
+          </button>
           <button
             mat-stroked-button
             class="preload-btn"

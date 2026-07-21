@@ -103,24 +103,45 @@
                     <mat-icon>{{ group.icon }}</mat-icon>
                     {{ group.label }}
                   </mat-panel-title>
-                  <mat-panel-description>{{ group.assets.length }} assets</mat-panel-description>
+                  <mat-panel-description>{{ group.assets.length + group.leveragedAssets.length }} assets</mat-panel-description>
                 </mat-expansion-panel-header>
                 <mat-list>
                   @for (asset of group.assets; track asset.id) {
-                    <a mat-list-item [routerLink]="['/assets', asset.ticker]">
+                    <a mat-list-item [routerLink]="['/assets', asset.ticker]" matTooltip="{{ asset.ticker }} — {{ asset.name }}" matTooltipPosition="right">
                       <span matListItemTitle>{{ asset.ticker }} — {{ asset.name }}</span>
                       <span matListItemMeta class="asset-badges">
                         <app-sparkline [data]="sparklines()[asset.ticker] ?? []" />
                         @if (asset.region) {
                           <mat-chip>{{ asset.region }}</mat-chip>
                         }
-                        @if (asset.leverage !== 1) {
-                          <mat-chip class="leverage-chip" highlighted>{{ asset.leverage }}x</mat-chip>
-                        }
                       </span>
                     </a>
                   }
                 </mat-list>
+                @if (group.leveragedAssets.length) {
+                  <mat-accordion class="leveraged-sub">
+                    <mat-expansion-panel>
+                      <mat-expansion-panel-header>
+                        <mat-panel-title>Leveraged {{ group.label.toLowerCase() }}</mat-panel-title>
+                        <mat-panel-description>{{ group.leveragedAssets.length }}</mat-panel-description>
+                      </mat-expansion-panel-header>
+                      <mat-list>
+                        @for (asset of group.leveragedAssets; track asset.id) {
+                          <a mat-list-item [routerLink]="['/assets', asset.ticker]" matTooltip="{{ asset.ticker }} — {{ asset.name }}" matTooltipPosition="right">
+                            <span matListItemTitle>{{ asset.ticker }} — {{ asset.name }}</span>
+                            <span matListItemMeta class="asset-badges">
+                              <app-sparkline [data]="sparklines()[asset.ticker] ?? []" />
+                              @if (asset.region) {
+                                <mat-chip>{{ asset.region }}</mat-chip>
+                              }
+                              <mat-chip class="leverage-chip" highlighted>{{ asset.leverage }}x</mat-chip>
+                            </span>
+                          </a>
+                        }
+                      </mat-list>
+                    </mat-expansion-panel>
+                  </mat-accordion>
+                }
               </mat-expansion-panel>
             }
           </mat-accordion>
@@ -154,7 +175,7 @@
                 <tr>
                   <th>{{ row }}</th>
                   @for (col of m.currencies; track col) {
-                    <td [class]="fxCellClass(m, row, col)">
+                    <td [class]="fxCellClass(m, row, col)" [style.background-color]="fxCellBg(row, col)">
                       @if (row === col) {
                         <span class="fx-diag">—</span>
                       } @else {

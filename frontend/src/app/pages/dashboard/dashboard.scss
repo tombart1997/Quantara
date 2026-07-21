@@ -177,6 +177,16 @@ mat-panel-title {
     white-space: nowrap;
   }
 
+  // Rightmost column was flush against the card edge — values got cut off.
+  th:last-child,
+  td:last-child {
+    padding-right: 16px;
+  }
+
+  td {
+    transition: background-color 0.9s ease;
+  }
+
   thead th {
     color: #6ec1ff;
     font-weight: 500;
@@ -247,6 +257,17 @@ mat-panel-title {
 // Subtle light-blue tint when hovering clickable explorer rows.
 a[mat-list-item]:hover {
   background: rgba(110, 193, 255, 0.07);
+}
+
+// Nested leveraged sub-panel: indent + pink accent to set it apart.
+.leveraged-sub {
+  margin: 4px 0 8px 24px;
+  border-left: 2px solid rgba(244, 143, 177, 0.35);
+
+  .mat-expansion-panel {
+    background: #141c28;
+    box-shadow: none;
+  }
 }
 
 .leverage-chip {
