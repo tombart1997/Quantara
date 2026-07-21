@@ -24,6 +24,11 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/weather/weather').then((m) => m.WeatherComponent),
   },
   {
+    path: 'temperature',
+    loadComponent: () =>
+      import('./pages/temperature/temperature').then((m) => m.TemperatureComponent),
+  },
+  {
     path: 'backtest',
     loadComponent: () => import('./pages/backtest/backtest').then((m) => m.BacktestComponent),
   },

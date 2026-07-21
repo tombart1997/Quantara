@@ -1,0 +1,88 @@
+<h1>Temperature</h1>
+
+<mat-card>
+  <mat-card-content>
+    <div class="controls">
+      <mat-form-field class="search">
+        <mat-label>Add a city…</mat-label>
+        <input
+          matInput
+          #cityInput
+          [matAutocomplete]="auto"
+          (input)="onQuery(cityInput.value)"
+        />
+        <mat-autocomplete
+          #auto="matAutocomplete"
+          (optionSelected)="onPlaceSelected($event.option.value); cityInput.value = ''"
+        >
+          @for (place of geocodeResults(); track place.lat + '-' + place.lon) {
+            <mat-option [value]="place">{{ placeLabel(place) }}</mat-option>
+          }
+        </mat-autocomplete>
+      </mat-form-field>
+
+      <div class="group-toggles">
+        @for (group of groups; track group.id) {
+          <mat-checkbox
+            [checked]="activeGroups().has(group.id)"
+            (change)="toggleGroup(group.id, $event.checked)"
+          >
+            <span class="group-dot" [style.background]="group.color"></span>{{ group.label }}
+          </mat-checkbox>
+        }
+      </div>
+    </div>
+
+    @if (userCities().length) {
+      <div class="city-chips">
+        @for (city of userCities(); track city.lat + '-' + city.lon) {
+          <mat-chip-row (removed)="removeCity(city)">
+            {{ city.name }}
+            <button matChipRemove aria-label="Remove city"><mat-icon>cancel</mat-icon></button>
+          </mat-chip-row>
+        }
+      </div>
+    }
+
+    <div class="map-wrap">
+      @if (mapOptions(); as options) {
+        <div echarts [options]="options" (chartClick)="onMapClick($event)" class="chart"></div>
+      } @else {
+        <div class="loading"><mat-spinner diameter="40"></mat-spinner></div>
+      }
+    </div>
+  </mat-card-content>
+</mat-card>
+
+@if (selected(); as place) {
+  <mat-card>
+    <mat-card-header>
+      <mat-card-title>
+        {{ place.label }}
+        @if (place.group) {
+          <mat-chip class="group-chip">{{ place.group }}</mat-chip>
+        }
+      </mat-card-title>
+      <mat-card-subtitle>
+        {{ place.detail }} · {{ place.lat.toFixed(2) }}, {{ place.lon.toFixed(2) }}
+        @if (analysis(); as a) {
+          · elevation {{ a.location.elevation | number: '1.0-0' }} m
+        }
+      </mat-card-subtitle>
+      <button mat-icon-button class="close-btn" (click)="closeAnalysis()" aria-label="Close">
+        <mat-icon>close</mat-icon>
+      </button>
+    </mat-card-header>
+    <mat-card-content>
+      @if (analysisLoading()) {
+        <div class="loading"><mat-spinner diameter="32"></mat-spinner></div>
+      }
+      @if (analysisOptions(); as options) {
+        <div echarts [options]="options" class="analysis-chart"></div>
+      }
+      @if (analysis(); as a) {
+        <p class="sources">{{ a.sources }}</p>
+      }
+    </mat-card-content>
+  </mat-card>
+}

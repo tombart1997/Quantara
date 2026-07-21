@@ -1,0 +1,83 @@
+h1 {
+  margin: 0 0 16px;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+mat-card {
+  margin-bottom: 16px;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.search {
+  width: 280px;
+}
+
+.group-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+}
+
+.group-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 5px;
+}
+
+.city-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.map-wrap {
+  position: relative;
+}
+
+.chart {
+  height: 55vh;
+  width: 100%;
+}
+
+.analysis-chart {
+  height: 320px;
+  width: 100%;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  padding: 48px;
+}
+
+mat-card-header {
+  position: relative;
+}
+
+.group-chip {
+  --mdc-chip-label-text-color: #6ec1ff;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+.close-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
+.sources {
+  margin: 8px 0 0;
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.45);
+}

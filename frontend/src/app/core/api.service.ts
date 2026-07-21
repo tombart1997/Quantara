@@ -11,6 +11,7 @@ import {
   DashboardResponse,
   EventCreate,
   FxMatrix,
+  GeoPlace,
   Indicator,
   JournalCreate,
   JournalEntry,
@@ -24,6 +25,7 @@ import {
   Signal,
   SstGrid,
   SstLatest,
+  TemperatureAnalysis,
   ThesisReviewItem,
 } from './api.models';
 
@@ -161,6 +163,16 @@ export class ApiService {
 
   getBacktest(): Observable<BacktestResult> {
     return this.http.get<BacktestResult>(`${this.base}/backtest`);
+  }
+
+  geocodePlace(q: string): Observable<GeoPlace[]> {
+    const params = new HttpParams().set('q', q);
+    return this.http.get<GeoPlace[]>(`${this.base}/temperature/geocode`, { params });
+  }
+
+  getTemperatureAnalysis(lat: number, lon: number): Observable<TemperatureAnalysis> {
+    const params = new HttpParams().set('lat', lat).set('lon', lon);
+    return this.http.get<TemperatureAnalysis>(`${this.base}/temperature/analysis`, { params });
   }
 
   refreshAll(): Observable<unknown> {

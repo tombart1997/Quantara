@@ -8,7 +8,7 @@ from __future__ import annotations
 from datetime import datetime
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.api.events import to_read as event_to_read
@@ -52,19 +52,35 @@ def get_dashboard(db: Session = Depends(get_db)) -> DashboardResponse:
             )
         )
 
+    # Dashboard sections are the user's CURATED view: everything ties back to
+    # the watchlist. Macro events (no asset) stay — they affect everything.
+    watchlist_ids = select(Asset.id).where(Asset.in_watchlist.is_(True)).scalar_subquery()
     upcoming = db.scalars(
-        select(Event).where(Event.date >= datetime.now()).order_by(Event.date).limit(10)
+        select(Event)
+        .where(Event.date >= datetime.now(),
+               (Event.asset_id.in_(watchlist_ids)) | Event.asset_id.is_(None))
+        .order_by(Event.date).limit(10)
     )
-    # Recent news only for watchlisted assets — the dashboard is the user's
-    # curated view, not a firehose of all 36 tickers.
     recent_news = db.scalars(
         select(NewsArticle)
         .where(NewsArticle.assets.any(Asset.in_watchlist.is_(True)))
         .order_by(NewsArticle.published_at.desc())
         .limit(10)
     ).unique()
+    # Latest signal PER WATCHLIST ASSET — the dashboard shows the current
+    # state, not the daily-snapshot timeline (that lives on the asset page).
+    latest_signal_ids = (
+        select(Signal.asset_id, func.max(Signal.created_at).label("latest"))
+        .where(Signal.asset_id.in_(watchlist_ids))
+        .group_by(Signal.asset_id)
+        .subquery()
+    )
     active_signals = db.scalars(
-        select(Signal).order_by(Signal.created_at.desc()).limit(10)
+        select(Signal)
+        .join(latest_signal_ids,
+              (Signal.asset_id == latest_signal_ids.c.asset_id)
+              & (Signal.created_at == latest_signal_ids.c.latest))
+        .order_by(Signal.score.desc())
     )
 
     return DashboardResponse(

@@ -79,7 +79,7 @@
               min="1981-09-01"
               [max]="latest()"
               #dateInput
-              (change)="onDatePicked(dateInput.value)"
+              (input)="onDatePicked(dateInput.value)"
             />
           </mat-form-field>
           <button

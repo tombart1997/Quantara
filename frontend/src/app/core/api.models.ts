@@ -303,3 +303,40 @@ export interface BacktestResult {
   rules: BacktestRule[];
   assets: BacktestAsset[];
 }
+
+// --- Temperature ---------------------------------------------------------------
+
+export interface GeoPlace {
+  name: string;
+  country: string;
+  admin1: string | null;
+  lat: number;
+  lon: number;
+}
+
+export interface TempHistoryPoint {
+  date: string;
+  mean: number;
+  max: number;
+  min: number;
+}
+
+export interface TempForecastPoint {
+  date: string;
+  mean: number;
+  spread: number;
+}
+
+export interface TempClimatologyPoint {
+  date: string;
+  mean: number;
+  std: number;
+}
+
+export interface TemperatureAnalysis {
+  location: { lat: number; lon: number; elevation: number };
+  history: TempHistoryPoint[];
+  forecast: TempForecastPoint[];
+  climatology: TempClimatologyPoint[];
+  sources: string;
+}
