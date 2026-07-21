@@ -7,6 +7,7 @@ import {
   AiConsultResponse,
   AiStatus,
   Asset,
+  BacktestResult,
   DashboardResponse,
   EventCreate,
   FxMatrix,
@@ -156,6 +157,10 @@ export class ApiService {
 
   getPrecacheStatus(): Observable<PrecacheStatus> {
     return this.http.get<PrecacheStatus>(`${this.base}/weather/sst/precache-status`);
+  }
+
+  getBacktest(): Observable<BacktestResult> {
+    return this.http.get<BacktestResult>(`${this.base}/backtest`);
   }
 
   refreshAll(): Observable<unknown> {

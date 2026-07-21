@@ -7,8 +7,10 @@ import {
   Subject,
   catchError,
   debounceTime,
-  distinctUntilChanged,
   interval,
+  map,
+  merge,
+  of,
   startWith,
   switchMap,
   takeWhile,
@@ -19,6 +21,7 @@ import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatCardModule } from '@angular/material/card';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
@@ -46,6 +49,7 @@ const NINO34: [number, number][] = [
     MatButtonModule,
     MatButtonToggleModule,
     MatCardModule,
+    MatCheckboxModule,
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
@@ -68,7 +72,7 @@ export class WeatherComponent implements OnInit {
   protected readonly mapReady = signal(false);
   protected readonly loadingInit = signal(true);
 
-  /** Days back from `latest` (0 = latest, max 364). */
+  /** Days back from `latest` (0 = latest, max 944 — the full precache window). */
   protected readonly dayOffset = signal(0);
   protected readonly selectedDate = computed(() => this.dateForOffset(this.dayOffset()));
   /** What the label shows: the actually loaded grid date, falling back to the slider. */
@@ -76,8 +80,54 @@ export class WeatherComponent implements OnInit {
     () => this.sst()?.date ?? this.selectedDate(),
   );
 
+  /** Long-form dates for the readouts. */
+  protected readonly bigDate = computed(() => this.formatLong(this.displayedDate()));
+  protected readonly scrollerDate = computed(() => this.formatLong(this.selectedDate()));
+
+  /** Month/year ruler ticks above the timeline (label every 3rd month). */
+  protected readonly rulerTicks = computed(() => {
+    const latest = this.latest();
+    if (!latest) return [];
+    const MONTHS = ['Jan.', 'Feb.', 'Mar.', 'Apr.', 'May', 'Jun.', 'Jul.',
+                    'Aug.', 'Sep.', 'Oct.', 'Nov.', 'Dec.'];
+    const end = new Date(`${latest}T00:00:00Z`);
+    const cursor = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), 1));
+    const ticks: { pct: number; label: string; showLabel: boolean }[] = [];
+    let i = 0;
+    while (cursor <= end) {
+      const offset = Math.round((end.getTime() - cursor.getTime()) / 86_400_000);
+      if (offset >= 0 && offset <= 944) {
+        ticks.push({
+          pct: (offset / 944) * 100,
+          label: `${MONTHS[cursor.getUTCMonth()]} ${cursor.getUTCFullYear()}`,
+          showLabel: i % 3 === 0,
+        });
+        i++;
+      }
+      cursor.setUTCMonth(cursor.getUTCMonth() + 1);
+    }
+    return ticks;
+  });
+
+  private formatLong(iso: string): string {
+    if (!iso) return '';
+    const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
+                    'August', 'September', 'October', 'November', 'December'];
+    const [y, m, d] = iso.split('-').map(Number);
+    return `${d} ${MONTHS[m - 1]} ${y}`;
+  }
+
   protected readonly sst = signal<SstGrid | null>(null);
-  protected readonly loadingGrid = signal(false);
+
+  /** Grid store keyed by date — powers the compare-years panels. */
+  protected readonly grids = signal<Record<string, SstGrid>>({});
+  /** Dates currently being downloaded. */
+  protected readonly loadingDates = signal<Set<string>>(new Set());
+  protected readonly loadingGrid = computed(() => this.loadingDates().size > 0);
+
+  protected readonly compareMode = signal(false);
+  /** Dates shown as panels in compare mode (primary first). */
+  protected readonly compareDates = signal<string[]>([]);
 
   /** Anomaly is the default: absolute SST looks the same every day. */
   protected readonly viewMode = signal<'anom' | 'abs'>('anom');
@@ -129,7 +179,23 @@ export class WeatherComponent implements OnInit {
   protected readonly chartOptions = computed<EChartsOption | null>(() => {
     const grid = this.sst();
     if (!grid || !this.mapReady()) return null;
+    return this.buildOptions(grid, this.viewMode() === 'anom');
+  });
+
+  /** Per-date options for compare mode; rebuilt instantly on viewMode change. */
+  protected readonly panelOptions = computed(() => {
     const anomView = this.viewMode() === 'anom';
+    const ready = this.mapReady();
+    const options: Record<string, EChartsOption> = {};
+    if (ready) {
+      for (const [day, grid] of Object.entries(this.grids())) {
+        options[day] = this.buildOptions(grid, anomView);
+      }
+    }
+    return options;
+  });
+
+  private buildOptions(grid: SstGrid, anomView: boolean): EChartsOption {
     const cells = anomView ? grid.anom : grid.grid;
     const data: number[][] = [];
     cells.forEach((row, i) => {
@@ -242,7 +308,29 @@ export class WeatherComponent implements OnInit {
         },
       ] as EChartsOption['series'],
     } as EChartsOption;
-  });
+  }
+
+  /** Selected date plus the same month/day 1 and 2 years earlier (>= 1981-09-01). */
+  private comparisonDatesFor(day: string): string[] {
+    const dates = [day];
+    for (const years of [1, 2]) {
+      const earlier = this.yearsEarlier(day, years);
+      if (earlier >= '1981-09-01') dates.push(earlier);
+    }
+    return dates;
+  }
+
+  private yearsEarlier(day: string, years: number): string {
+    const date = new Date(`${day}T00:00:00Z`);
+    date.setUTCFullYear(date.getUTCFullYear() - years);
+    return date.toISOString().slice(0, 10);
+  }
+
+  protected onCompareToggle(checked: boolean): void {
+    this.compareMode.set(checked);
+    // Re-run the debounced stream; grids already in the store are reused.
+    this.dateRequests.next(this.selectedDate());
+  }
 
   ngOnInit(): void {
     this.http.get('assets/countries.geo.json').subscribe((geo) => {
@@ -265,36 +353,57 @@ export class WeatherComponent implements OnInit {
     });
 
     // Scrubbing the slider emits dates here; debounce + switchMap keeps only the
-    // latest request (an in-flight NOAA download is abandoned, not stacked).
+    // latest selection (in-flight NOAA downloads are abandoned, not stacked).
+    // Compare mode fans out to one request per comparison year, in parallel.
     this.dateRequests
       .pipe(
         debounceTime(300),
-        distinctUntilChanged(),
         takeUntilDestroyed(this.destroyRef),
         switchMap((day) => {
-          this.loadingGrid.set(true);
-          return this.api.getSst(day).pipe(
-            catchError((err: HttpErrorResponse) => {
-              this.loadingGrid.set(false);
-              this.snackBar.open(
-                err.status === 404 ? 'No SST data for this date' : 'Failed to load SST data',
-                undefined,
-                { duration: 3000 },
-              );
-              // Stay on the last good date.
-              const good = this.sst()?.date;
-              if (good && this.latest()) {
-                this.dayOffset.set(this.offsetForDate(good));
-              }
-              return EMPTY;
-            }),
+          const dates = this.compareMode() ? this.comparisonDatesFor(day) : [day];
+          this.compareDates.set(dates);
+          const missing = dates.filter((d) => !this.grids()[d]);
+          this.loadingDates.set(new Set(missing));
+          // Grids already in the store apply instantly.
+          const cachedGrid = this.grids()[day];
+          if (cachedGrid) this.sst.set(cachedGrid);
+          if (!missing.length) return EMPTY;
+          return merge(
+            ...missing.map((d) =>
+              this.api.getSst(d).pipe(
+                map((grid) => ({ day: d, grid })),
+                catchError((err: HttpErrorResponse) => {
+                  this.snackBar.open(
+                    err.status === 404 ? `No SST data for ${d}` : 'Failed to load SST data',
+                    undefined,
+                    { duration: 3000 },
+                  );
+                  // Single mode: stay on the last good date.
+                  if (!this.compareMode() && d === day) {
+                    const good = this.sst()?.date;
+                    if (good && this.latest()) {
+                      this.dayOffset.set(this.offsetForDate(good));
+                    }
+                  }
+                  return of({ day: d, grid: null });
+                }),
+              ),
+            ),
           );
         }),
       )
-      .subscribe((grid) => {
-        this.sst.set(grid);
-        this.loadingGrid.set(false);
-        this.cachedDates.update((dates) => new Set(dates).add(grid.date));
+      .subscribe(({ day, grid }) => {
+        this.loadingDates.update((dates) => {
+          const next = new Set(dates);
+          next.delete(day);
+          return next;
+        });
+        if (grid) {
+          this.grids.update((grids) => ({ ...grids, [day]: grid }));
+          this.cachedDates.update((dates) => new Set(dates).add(grid.date));
+          // The primary date (first in the list) drives the readouts below the map.
+          if (day === this.compareDates()[0]) this.sst.set(grid);
+        }
       });
   }
 
@@ -307,7 +416,7 @@ export class WeatherComponent implements OnInit {
     if (!value) return;
     const offset = this.offsetForDate(value);
     // Within slider range -> sync the slider; older -> leave it, show the map anyway.
-    if (offset >= 0 && offset <= 364) this.dayOffset.set(offset);
+    if (offset >= 0 && offset <= 944) this.dayOffset.set(offset);
     this.dateRequests.next(value);
   }
 

@@ -14,24 +14,62 @@
           <mat-button-toggle value="anom">Anomaly</mat-button-toggle>
           <mat-button-toggle value="abs">Absolute</mat-button-toggle>
         </mat-button-toggle-group>
+        <mat-checkbox
+          class="compare-check"
+          [checked]="compareMode()"
+          (change)="onCompareToggle($event.checked)"
+        >
+          Compare years
+        </mat-checkbox>
       </div>
-      <div class="map-wrap">
-        @if (chartOptions(); as options) {
-          <div echarts [options]="options" class="chart"></div>
-        } @else {
-          <div class="loading"><mat-spinner diameter="40"></mat-spinner></div>
-        }
-        @if (loadingGrid()) {
-          <div class="grid-overlay">
-            <mat-spinner diameter="28"></mat-spinner>
-            <span>downloading from NOAA…</span>
-          </div>
-        }
-      </div>
+      @if (compareMode()) {
+        <div class="panels">
+          @for (day of compareDates(); track day) {
+            <div class="map-wrap panel">
+              <div class="panel-date">{{ day }}</div>
+              @if (panelOptions()[day]; as options) {
+                <div echarts [options]="options" class="chart chart-sm"></div>
+              } @else {
+                <div class="loading"><mat-spinner diameter="32"></mat-spinner></div>
+              }
+              @if (loadingDates().has(day)) {
+                <div class="grid-overlay">
+                  <mat-spinner diameter="24"></mat-spinner>
+                  <span>downloading from NOAA…</span>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="map-wrap">
+          <div class="big-date">{{ bigDate() }}</div>
+          @if (chartOptions(); as options) {
+            <div echarts [options]="options" class="chart"></div>
+          } @else {
+            <div class="loading"><mat-spinner diameter="40"></mat-spinner></div>
+          }
+          @if (loadingGrid()) {
+            <div class="grid-overlay">
+              <mat-spinner diameter="28"></mat-spinner>
+              <span>downloading from NOAA…</span>
+            </div>
+          }
+        </div>
+      }
 
       <div class="timeline">
+        <div class="scroller-date">{{ scrollerDate() }}</div>
+        <div class="ruler">
+          @for (t of rulerTicks(); track t.pct) {
+            <span class="tick" [style.left.%]="t.pct"></span>
+            @if (t.showLabel) {
+              <span class="tick-label" [style.left.%]="t.pct">{{ t.label }}</span>
+            }
+          }
+        </div>
         <div class="timeline-row">
-          <mat-slider min="0" max="364" step="1" [displayWith]="sliderLabel" class="slider">
+          <mat-slider min="0" max="944" step="1" [displayWith]="sliderLabel" class="slider">
             <input matSliderThumb [value]="dayOffset()" (valueChange)="onSlider($event)" />
           </mat-slider>
           <mat-form-field class="date-picker" subscriptSizing="dynamic">

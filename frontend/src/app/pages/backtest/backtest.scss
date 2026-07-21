@@ -1,0 +1,142 @@
+h1 {
+  margin: 0 0 16px;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 48px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+mat-card {
+  margin-bottom: 16px;
+}
+
+.method-box {
+  background: #0c121b;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 8px;
+  padding: 10px 14px;
+
+  p {
+    margin: 4px 0;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.65);
+  }
+}
+
+.rules-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+
+  th,
+  td {
+    padding: 8px 10px;
+    text-align: left;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  }
+
+  th {
+    color: rgba(255, 255, 255, 0.55);
+    font-weight: 500;
+    font-size: 0.78rem;
+  }
+
+  td {
+    color: rgba(255, 255, 255, 0.8);
+  }
+}
+
+.rule-name {
+  font-weight: 500;
+}
+
+.strongest {
+  --mdc-chip-label-text-color: #6ec1ff;
+  margin-left: 8px;
+}
+
+.n {
+  display: block;
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.positive {
+  color: #4ade80;
+}
+
+.negative {
+  color: #f87171;
+}
+
+.noise {
+  color: #fbbf24;
+}
+
+.ticker-filter {
+  width: 240px;
+  margin-bottom: 8px;
+}
+
+.asset-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 12px;
+}
+
+.asset-card {
+  background: #141c28;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.ticker {
+  font-weight: 500;
+}
+
+.asset-name {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.55);
+  margin-left: 8px;
+}
+
+.asset-rule {
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  padding: 6px 0;
+
+  &:first-child {
+    margin-top: 8px;
+  }
+}
+
+.rule-title {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.main-line {
+  display: block;
+  font-size: 0.82rem;
+}
+
+.sub-line {
+  display: block;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.footnote,
+.empty {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.45);
+}

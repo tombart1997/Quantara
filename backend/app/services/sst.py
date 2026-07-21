@@ -147,32 +147,70 @@ def download_new_days() -> dict:
 
 
 # --- Background pre-cache -----------------------------------------------------
-# Downloads recent history in a worker pool so the timeline is instant.
+# Bulk downloads use ONE REQUEST PER MONTH-CHUNK instead of one per day —
+# ~30x fewer requests, which is the difference between hours and minutes.
 PRECACHE_STATE: dict = {"running": False, "done": 0, "total": 0, "current": None}
+PRECACHE_WORKERS = 4
+CHUNK_DAYS = 31
+
+
+def _fetch_range_and_cache(days: list[date]) -> None:
+    """Fetch a contiguous span in ONE ERDDAP request, write per-day files."""
+    import json
+
+    d0, d1 = min(days), max(days)
+    constraints = (
+        f"[({d0.isoformat()}T12:00:00Z):1:({d1.isoformat()}T12:00:00Z)][(0.0)]"
+        f"[(-89.875):{STRIDE}:(89.875)][(0.125):{STRIDE}:(359.875)]"
+    )
+    url = f"{ERDDAP}.csv0?sst{constraints},anom{constraints}"
+    with httpx.Client(timeout=300.0) as client:
+        resp = client.get(url)
+        resp.raise_for_status()
+
+    # Split rows by day, then reuse the single-day parser per day.
+    per_day: dict[str, list[str]] = {}
+    for line in resp.text.splitlines():
+        if line:
+            per_day.setdefault(line[:10], []).append(line)
+    CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    for day_iso, rows in per_day.items():
+        day = date.fromisoformat(day_iso)
+        if _cache_path(day).exists():
+            continue
+        grid = _parse_grid("\n".join(rows), day)
+        _cache_path(day).write_text(json.dumps(grid))
 
 
 def precache(days: int) -> None:
     """Fetch the last `days` days (skipping cached ones). Runs in a thread."""
     from concurrent.futures import ThreadPoolExecutor
-    from datetime import timedelta
 
     latest = date.fromisoformat(latest_available_date())
     wanted = [latest - timedelta(days=i) for i in range(days)]
-    missing = [d for d in wanted if not _cache_path(d).exists()]
+    missing = sorted(d for d in wanted if not _cache_path(d).exists())
+
+    # Group consecutive missing days into chunks of up to CHUNK_DAYS days.
+    chunks: list[list[date]] = []
+    for d in missing:
+        if chunks and (d - chunks[-1][-1]).days == 1 and len(chunks[-1]) < CHUNK_DAYS:
+            chunks[-1].append(d)
+        else:
+            chunks.append([d])
 
     PRECACHE_STATE.update(running=True, done=0, total=len(missing), current=None)
     try:
-        def fetch_one(day: date) -> None:
-            PRECACHE_STATE["current"] = day.isoformat()
+        def fetch_chunk(chunk: list[date]) -> None:
+            PRECACHE_STATE["current"] = f"{chunk[0].isoformat()}..{chunk[-1].isoformat()}"
             try:
-                get_sst(day)
-            except Exception as e:  # keep going; a failed day stays uncached
-                logger.warning("Precache failed for %s: %s", day, e)
-            PRECACHE_STATE["done"] += 1
+                _fetch_range_and_cache(chunk)
+            except Exception as e:
+                logger.warning("Precache chunk failed for %s: %s",
+                               PRECACHE_STATE["current"], e)
+            PRECACHE_STATE["done"] += len(chunk)
 
-        # Two workers: polite to ERDDAP, ~2x faster than sequential.
-        with ThreadPoolExecutor(max_workers=2) as pool:
-            list(pool.map(fetch_one, missing))
+        with ThreadPoolExecutor(max_workers=PRECACHE_WORKERS) as pool:
+            list(pool.map(fetch_chunk, chunks))
     finally:
         PRECACHE_STATE["running"] = False
         PRECACHE_STATE["current"] = None

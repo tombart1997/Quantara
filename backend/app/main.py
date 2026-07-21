@@ -13,7 +13,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import ai, assets, dashboard, events, fx, journal, news, refresh, ripple, signals, weather
+from app.api import ai, assets, backtest, dashboard, events, fx, journal, news, refresh, ripple, signals, weather
 from app.core.config import get_settings
 from app.services.scheduler import refresh_loop
 from app.services.sst import PRECACHE_STATE, precache
@@ -54,6 +54,7 @@ app.include_router(refresh.router)
 app.include_router(fx.router)
 app.include_router(ripple.router)
 app.include_router(weather.router)
+app.include_router(backtest.router)
 
 app.add_middleware(
     CORSMiddleware,

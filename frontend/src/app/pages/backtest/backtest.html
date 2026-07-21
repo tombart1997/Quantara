@@ -1,0 +1,127 @@
+<h1>Backtest</h1>
+
+@if (loading()) {
+  <div class="loading">
+    <mat-spinner diameter="40"></mat-spinner>
+    <span>Replaying rules over 2 years of prices…</span>
+  </div>
+} @else if (result(); as r) {
+  <mat-card class="header-card">
+    <mat-card-header>
+      <mat-card-title>Signal Backtest</mat-card-title>
+      <mat-card-subtitle>
+        {{ r.window.from }} → {{ r.window.to }} · {{ r.total_fires | number }} rule fires
+      </mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      <div class="method-box">
+        <p>{{ r.method_note }}</p>
+        <p>{{ r.baseline_note }}</p>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card>
+    <mat-card-header>
+      <mat-card-title>Rule summary</mat-card-title>
+      <mat-card-subtitle>Forward returns after each rule fired, vs the unconditional average.</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      <table class="rules-table">
+        <thead>
+          <tr>
+            <th>Rule</th>
+            <th>Fires</th>
+            @for (h of horizons(); track h) {
+              <th>+{{ h }}d</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (rule of r.rules; track rule.rule) {
+            <tr>
+              <td class="rule-name">
+                {{ rule.title }}
+                @if (rule.rule === strongestRule()) {
+                  <mat-chip class="strongest">strongest</mat-chip>
+                }
+              </td>
+              <td>{{ rule.fires | number }}</td>
+              @for (h of horizons(); track h) {
+                @if (rule.per_horizon[hkey(h)]; as st) {
+                  <td>
+                    <span [class]="deltaClass(st.delta_vs_baseline)">
+                      {{ st.hit_rate }}% · {{ signed(st.mean) }}% ({{
+                        signed(st.delta_vs_baseline)
+                      }}%)
+                    </span>
+                    <span class="n">n={{ st.n }}</span>
+                  </td>
+                }
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card>
+    <mat-card-header>
+      <mat-card-title>Per-asset breakdown</mat-card-title>
+      <mat-card-subtitle>Rules with at least 3 fires per asset.</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      <mat-form-field class="ticker-filter">
+        <mat-label>Filter by asset</mat-label>
+        <mat-select [value]="tickerFilter()" (selectionChange)="tickerFilter.set($event.value)">
+          <mat-option [value]="null">All</mat-option>
+          @for (ticker of assetTickers(); track ticker) {
+            <mat-option [value]="ticker">{{ ticker }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <div class="asset-grid">
+        @for (asset of filteredAssets(); track asset.ticker) {
+          <div class="asset-card">
+            <a [routerLink]="['/assets', asset.ticker]" class="ticker">{{ asset.ticker }}</a>
+            <span class="asset-name">{{ asset.name }}</span>
+            <div class="asset-rules">
+              @for (row of assetRules(asset); track row.rule) {
+                @if (row.per[lastHorizon()]; as st) {
+                  <div class="asset-rule">
+                    <span class="rule-title">{{ row.title }}</span>
+                    <span class="main-line" [class]="deltaClass(st.delta_vs_baseline)">
+                      n={{ st.n }} · hit {{ st.hit_rate }}% · mean {{ signed(st.mean) }}% ({{
+                        signed(st.delta_vs_baseline)
+                      }}%)
+                    </span>
+                    <span class="sub-lines">
+                      @for (h of horizons(); track h) {
+                        @if (h !== horizons().at(-1)) {
+                          @if (row.per[hkey(h)]; as sub) {
+                            <span class="sub-line">
+                              +{{ h }}d: hit {{ sub.hit_rate }}% · mean {{ signed(sub.mean) }}%
+                            </span>
+                          }
+                        }
+                      }
+                    </span>
+                  </div>
+                }
+              }
+            </div>
+          </div>
+        }
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <p class="footnote">
+    delta vs baseline = mean forward return after the rule fired minus the unconditional average.
+    Positive = the rule historically marked above-average moves. Small n = low confidence.
+  </p>
+} @else {
+  <p class="empty">Could not load the backtest.</p>
+}

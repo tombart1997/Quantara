@@ -266,3 +266,40 @@ export interface PrecacheStatus {
   current: string | null;
   cached_total: number;
 }
+
+// --- Backtest ------------------------------------------------------------------
+
+export interface HorizonStats {
+  n: number;
+  hit_rate: number;
+  mean: number;
+  median: number;
+  baseline_mean: number;
+  delta_vs_baseline: number;
+}
+
+export interface BacktestRule {
+  rule: string;
+  title: string;
+  fires: number;
+  /** Keyed by horizon in days, e.g. "5" | "10" | "20". */
+  per_horizon: Record<string, HorizonStats>;
+}
+
+export interface BacktestAsset {
+  ticker: string;
+  name: string;
+  /** Only rules with >= 3 fires for this asset. */
+  rules: Record<string, Record<string, HorizonStats>>;
+}
+
+export interface BacktestResult {
+  window: { from: string; to: string };
+  horizons: number[];
+  baseline_mean_returns: Record<string, number>;
+  baseline_note: string;
+  method_note: string;
+  total_fires: number;
+  rules: BacktestRule[];
+  assets: BacktestAsset[];
+}
