@@ -1,4 +1,4 @@
-<h1>Temperature</h1>
+<h1>Weather</h1>
 
 <mat-card>
   <mat-card-content>
@@ -73,12 +73,33 @@
         <mat-icon>close</mat-icon>
       </button>
     </mat-card-header>
-    <mat-card-content>
+    <mat-card-content class="analysis-body">
       @if (analysisLoading()) {
         <div class="loading"><mat-spinner diameter="32"></mat-spinner></div>
       }
+      @if (analysis(); as a) {
+        <div class="now-strip">
+          <span class="now-label">Now</span>
+          <span class="stat">{{ a.current.temperature }}°C</span>
+          <span class="stat">humidity {{ a.current.humidity }}%</span>
+          <span class="stat">cloud {{ a.current.cloud }}%</span>
+          <span class="stat">
+            wind {{ a.current.wind_speed }} km/h {{ dirCompass(a.current.wind_dir) }}
+          </span>
+          <span class="stat">gusts {{ a.current.gusts }} km/h</span>
+        </div>
+      }
       @if (analysisOptions(); as options) {
+        <h4 class="section-label">Temperature</h4>
         <div echarts [options]="options" class="analysis-chart"></div>
+      }
+      @if (windOptions(); as options) {
+        <h4 class="section-label">Wind</h4>
+        <div echarts [options]="options" class="small-chart"></div>
+      }
+      @if (humidityOptions(); as options) {
+        <h4 class="section-label">Humidity &amp; cloud</h4>
+        <div echarts [options]="options" class="small-chart"></div>
       }
       @if (analysis(); as a) {
         <p class="sources">{{ a.sources }}</p>

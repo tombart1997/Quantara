@@ -232,6 +232,22 @@ export class TemperatureComponent implements OnInit {
     return a ? this.buildAnalysisOptions(a) : null;
   });
 
+  protected readonly windOptions = computed<EChartsOption | null>(() => {
+    const a = this.analysis();
+    return a?.conditions.length ? this.buildWindOptions(a) : null;
+  });
+
+  protected readonly humidityOptions = computed<EChartsOption | null>(() => {
+    const a = this.analysis();
+    return a?.conditions.length ? this.buildHumidityOptions(a) : null;
+  });
+
+  /** 8-point compass label from degrees, e.g. 202 -> "SSW". */
+  protected dirCompass(deg: number): string {
+    const points = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+    return points[Math.round(deg / 45) % 8];
+  }
+
   ngOnInit(): void {
     this.http.get('assets/countries.geo.json').subscribe((geo) => {
       echarts.registerMap('world', geo as Parameters<typeof echarts.registerMap>[1]);
@@ -444,6 +460,130 @@ export class TemperatureComponent implements OnInit {
           symbol: 'none',
           lineStyle: { color: '#9aa7b8', width: 1.5, type: 'dotted' },
           itemStyle: { color: '#9aa7b8' },
+        },
+      ] as EChartsOption['series'],
+    } as EChartsOption;
+  }
+
+  private darkChartBase(): Pick<EChartsOption, 'backgroundColor' | 'textStyle' | 'tooltip'> {
+    return {
+      backgroundColor: 'transparent',
+      textStyle: { color: '#9aa7b8' },
+      tooltip: {
+        trigger: 'axis',
+        backgroundColor: '#1a2433',
+        borderColor: 'rgba(255, 255, 255, 0.12)',
+        textStyle: { color: '#e6edf5' },
+      },
+    };
+  }
+
+  private buildWindOptions(a: TemperatureAnalysis): EChartsOption {
+    const days = a.conditions;
+    return {
+      ...this.darkChartBase(),
+      tooltip: {
+        ...this.darkChartBase().tooltip,
+        formatter: (params: unknown) => {
+          const list = params as { seriesName: string; marker: string; value: number; dataIndex: number }[];
+          const c = days[list[0]?.dataIndex ?? 0];
+          const lines = list.map(
+            (p) => `${p.marker} ${p.seriesName}: ${p.value.toFixed(1)} km/h`,
+          );
+          lines.push(`Dir: ${this.dirCompass(c.wind_dir)} (${c.wind_dir}°)`);
+          return [c.date, ...lines].join('<br>');
+        },
+      },
+      legend: { data: ['Wind max', 'Gusts'], bottom: 0, textStyle: { color: '#9aa7b8' } },
+      grid: { left: 50, right: 20, top: 20, bottom: 50 },
+      xAxis: {
+        type: 'category',
+        data: days.map((c) => c.date),
+        axisLine: { lineStyle: { color: '#3a4a5f' } },
+      },
+      yAxis: {
+        type: 'value',
+        name: 'km/h',
+        nameTextStyle: { color: '#9aa7b8' },
+        axisLabel: { color: '#9aa7b8' },
+        splitLine: { lineStyle: { color: 'rgba(255, 255, 255, 0.06)' } },
+      },
+      series: [
+        {
+          name: 'Wind max',
+          type: 'line',
+          data: days.map((c) => c.wind_max),
+          symbol: 'none',
+          lineStyle: { color: '#6ec1ff', width: 2 },
+          itemStyle: { color: '#6ec1ff' },
+        },
+        {
+          name: 'Gusts',
+          type: 'line',
+          data: days.map((c) => c.gusts_max),
+          symbol: 'none',
+          lineStyle: { color: '#f48fb1', width: 2, type: 'dashed' },
+          itemStyle: { color: '#f48fb1' },
+        },
+      ] as EChartsOption['series'],
+    } as EChartsOption;
+  }
+
+  private buildHumidityOptions(a: TemperatureAnalysis): EChartsOption {
+    const days = a.conditions;
+    return {
+      ...this.darkChartBase(),
+      tooltip: {
+        ...this.darkChartBase().tooltip,
+        formatter: (params: unknown) => {
+          const list = params as { seriesName: string; marker: string; value: number }[];
+          const date = days[(params as { dataIndex: number }[])[0]?.dataIndex ?? 0]?.date ?? '';
+          const lines = list.map((p) => `${p.marker} ${p.seriesName}: ${p.value}%`);
+          return [date, ...lines].join('<br>');
+        },
+      },
+      legend: {
+        data: ['Humidity', 'Cloud cover', 'Precip prob'],
+        bottom: 0,
+        textStyle: { color: '#9aa7b8' },
+      },
+      grid: { left: 50, right: 20, top: 20, bottom: 50 },
+      xAxis: {
+        type: 'category',
+        data: days.map((c) => c.date),
+        axisLine: { lineStyle: { color: '#3a4a5f' } },
+      },
+      yAxis: {
+        type: 'value',
+        min: 0,
+        max: 100,
+        axisLabel: { formatter: '{value}%', color: '#9aa7b8' },
+        splitLine: { lineStyle: { color: 'rgba(255, 255, 255, 0.06)' } },
+      },
+      series: [
+        {
+          name: 'Precip prob',
+          type: 'bar',
+          data: days.map((c) => c.precip_prob),
+          barWidth: '40%',
+          itemStyle: { color: '#f48fb1', opacity: 0.6 },
+        },
+        {
+          name: 'Humidity',
+          type: 'line',
+          data: days.map((c) => c.humidity),
+          symbol: 'none',
+          lineStyle: { color: '#fbbf24', width: 2 },
+          itemStyle: { color: '#fbbf24' },
+        },
+        {
+          name: 'Cloud cover',
+          type: 'line',
+          data: days.map((c) => c.cloud),
+          symbol: 'none',
+          lineStyle: { color: '#6ec1ff', width: 1.5 },
+          itemStyle: { color: '#6ec1ff' },
+          areaStyle: { color: '#6ec1ff', opacity: 0.2 },
         },
       ] as EChartsOption['series'],
     } as EChartsOption;

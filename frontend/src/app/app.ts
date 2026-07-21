@@ -37,8 +37,8 @@ export class App {
   protected readonly navItems: NavItem[] = [
     { label: 'Dashboard', icon: 'dashboard', route: '/dashboard' },
     { label: 'Ripple', icon: 'blur_circular', route: '/ripple' },
-    { label: 'Weather', icon: 'thermostat', route: '/weather' },
-    { label: 'Temperature', icon: 'device_thermostat', route: '/temperature' },
+    { label: 'Sea Surface Temp', icon: 'thermostat', route: '/weather' },
+    { label: 'Weather', icon: 'partly_cloudy_day', route: '/temperature' },
     { label: 'Backtest', icon: 'fact_check', route: '/backtest' },
     { label: 'Calendar', icon: 'event', route: '/calendar' },
     { label: 'Journal', icon: 'edit_note', route: '/journal' },

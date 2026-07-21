@@ -319,6 +319,10 @@ export interface TempHistoryPoint {
   mean: number;
   max: number;
   min: number;
+  /** Present on fresh cache entries; null on older ones. */
+  wind_max?: number | null;
+  humidity?: number | null;
+  cloud?: number | null;
 }
 
 export interface TempForecastPoint {
@@ -333,10 +337,32 @@ export interface TempClimatologyPoint {
   std: number;
 }
 
+export interface CurrentConditions {
+  temperature: number;
+  humidity: number;
+  cloud: number;
+  wind_speed: number;
+  wind_dir: number;
+  gusts: number;
+}
+
+export interface ConditionsPoint {
+  date: string;
+  precip_prob: number;
+  wind_max: number;
+  gusts_max: number;
+  wind_dir: number;
+  humidity: number;
+  cloud: number;
+}
+
 export interface TemperatureAnalysis {
   location: { lat: number; lon: number; elevation: number };
+  current: CurrentConditions;
   history: TempHistoryPoint[];
   forecast: TempForecastPoint[];
   climatology: TempClimatologyPoint[];
+  /** 16 days, date-parallel to forecast. */
+  conditions: ConditionsPoint[];
   sources: string;
 }

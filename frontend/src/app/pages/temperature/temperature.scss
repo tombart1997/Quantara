@@ -54,6 +54,50 @@ mat-card {
   width: 100%;
 }
 
+.small-chart {
+  height: 220px;
+  width: 100%;
+}
+
+.analysis-body {
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.now-strip {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.now-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.45);
+  margin-right: 4px;
+}
+
+.stat {
+  background: #141c28;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 14px;
+  padding: 3px 12px;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.section-label {
+  margin: 14px 0 4px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.55);
+}
+
 .loading {
   display: flex;
   justify-content: center;
