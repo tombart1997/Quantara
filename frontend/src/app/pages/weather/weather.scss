@@ -152,6 +152,13 @@ h1 {
   &.downloading {
     color: #f48fb1;
   }
+
+  &.preliminary {
+    color: #fbbf24;
+    border: 1px solid rgba(251, 191, 36, 0.4);
+    border-radius: 6px;
+    padding: 1px 7px;
+  }
 }
 
 .stats {

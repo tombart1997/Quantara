@@ -9,6 +9,7 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta
 
 from sqlalchemy import delete, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.models import Asset, Event, NewsArticle, PriceHistory, Signal
@@ -51,9 +52,14 @@ def signal_name(asset: Asset, ev: Evaluation) -> str:
 
 
 def run(db: Session) -> list[Signal]:
-    """Evaluate every asset and persist today's signals. Returns what was stored."""
-    # Replace today's signals so recompute is idempotent.
-    today_start = datetime.combine(date.today(), datetime.min.time())
+    """Evaluate every asset and persist today's signals. Returns what was stored.
+
+    Race safety: the (asset, name, signal_date) unique constraint is the final
+    arbiter when multiple engine processes run concurrently — a losing insert
+    is skipped, never duplicated.
+    """
+    today = date.today()
+    today_start = datetime.combine(today, datetime.min.time())
     db.execute(delete(Signal).where(Signal.created_at >= today_start))
 
     created: list[Signal] = []
@@ -62,8 +68,13 @@ def run(db: Session) -> list[Signal]:
         if ev.score == 0:
             continue  # nothing fired -> no signal, no noise
         signal = Signal(asset_id=asset.id, name=signal_name(asset, ev),
-                        reasons=ev.reasons, score=ev.score)
-        db.add(signal)
-        created.append(signal)
+                        reasons=ev.reasons, score=ev.score, signal_date=today)
+        try:
+            with db.begin_nested():  # savepoint: only this insert rolls back
+                db.add(signal)
+                db.flush()
+            created.append(signal)
+        except IntegrityError:
+            continue  # a concurrent process already wrote this one
     db.commit()
     return created

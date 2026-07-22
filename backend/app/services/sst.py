@@ -22,13 +22,19 @@ import httpx
 logger = logging.getLogger(__name__)
 
 ERDDAP = "https://coastwatch.pfeg.noaa.gov/erddap/griddap/ncdcOisst21Agg"
+ERDDAP_NRT = "https://coastwatch.pfeg.noaa.gov/erddap/griddap/ncdcOisst21NrtAgg_LonPM180"
 CACHE_DIR = Path(__file__).resolve().parents[2] / "data" / "sst"
 STRIDE = 8
 LATEST_TTL = 3600  # re-check the latest available date hourly
 # v2: cache files now carry both absolute SST and anomaly grids.
 CACHE_SUFFIX = ".v2.json"
+# NRT (near-real-time, preliminary): same format, ~1-2 day lag, but files
+# get REVISED by NOAA -> short cache TTL instead of cache-forever.
+NRT_SUFFIX = ".nrt.v2.json"
+NRT_CACHE_TTL = 24 * 3600
 
 _latest_cache: tuple[float, str] | None = None
+_latest_nrt_cache: tuple[float, str] | None = None
 
 
 class SstNotAvailable(Exception):
@@ -39,28 +45,48 @@ def _cache_path(day: date) -> Path:
     return CACHE_DIR / f"{day.isoformat()}{CACHE_SUFFIX}"
 
 
+def _nrt_path(day: date) -> Path:
+    return CACHE_DIR / f"{day.isoformat()}{NRT_SUFFIX}"
+
+
+def _latest_from(base_url: str) -> str:
+    with httpx.Client(timeout=30.0) as client:
+        resp = client.get(f"{base_url}.json?sst[(last)][(0.0)][(0)][(0)]")
+        resp.raise_for_status()
+        return resp.json()["table"]["rows"][0][0][:10]
+
+
 def latest_available_date() -> str:
-    """The most recent day NOAA has published (OISST lags real time)."""
+    """The most recent day NOAA has published (final OISST lags ~2 weeks)."""
     global _latest_cache
     now = time.time()
     if _latest_cache and now - _latest_cache[0] < LATEST_TTL:
         return _latest_cache[1]
-    with httpx.Client(timeout=30.0) as client:
-        resp = client.get(f"{ERDDAP}.json?sst[(last)][(0.0)][(0)][(0)]")
-        resp.raise_for_status()
-        rows = resp.json()["table"]["rows"]
-    latest = rows[0][0][:10]  # "2026-07-04T12:00:00Z" -> date
-    _latest_cache = (now, latest)
-    return latest
+    _latest_cache = (now, _latest_from(ERDDAP))
+    return _latest_cache[1]
 
 
-def _fetch_grid(day: date) -> str:
-    """Download one day's strided grid (absolute SST + anomaly) from ERDDAP."""
+def latest_nrt_date() -> str:
+    """The most recent NRT (preliminary) day — usually yesterday."""
+    global _latest_nrt_cache
+    now = time.time()
+    if _latest_nrt_cache and now - _latest_nrt_cache[0] < LATEST_TTL:
+        return _latest_nrt_cache[1]
+    _latest_nrt_cache = (now, _latest_from(ERDDAP_NRT))
+    return _latest_nrt_cache[1]
+
+
+def _fetch_grid(day: date, base_url: str = ERDDAP) -> str:
+    """Download one day's strided grid (absolute SST + anomaly) from ERDDAP.
+
+    The final product indexes longitude 0..360, the NRT product -180..180.
+    """
+    lon_range = "(-179.875):%d:(179.875)" % STRIDE if base_url == ERDDAP_NRT else f"(0.125):{STRIDE}:(359.875)"
     constraints = (
         f"[({day.isoformat()}T12:00:00Z)][(0.0)]"
-        f"[(-89.875):{STRIDE}:(89.875)][(0.125):{STRIDE}:(359.875)]"
+        f"[(-89.875):{STRIDE}:(89.875)][{lon_range}]"
     )
-    url = f"{ERDDAP}.csv0?sst{constraints},anom{constraints}"
+    url = f"{base_url}.csv0?sst{constraints},anom{constraints}"
     with httpx.Client(timeout=90.0) as client:
         resp = client.get(url)
         if resp.status_code == 404:
@@ -99,18 +125,36 @@ def _parse_grid(csv_text: str, day: date) -> dict:
 
 
 def get_sst(day: date) -> dict:
-    """SST grid for one day — disk-cached, fetched once ever."""
+    """SST grid for one day — final product cached forever; days newer than
+    the final product's latest fall back to the NRT (preliminary) product
+    with a short cache TTL since NOAA revises those files."""
+    import json
+
     path = _cache_path(day)
     if path.exists():
-        import json
         return json.loads(path.read_text())
-    raw = _fetch_grid(day)
-    grid = _parse_grid(raw, day)
+
+    final_latest = date.fromisoformat(latest_available_date())
+    if day <= final_latest:
+        grid = _parse_grid(_fetch_grid(day), day)
+        CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(grid))
+        logger.info("Cached SST grid for %s (final)", day.isoformat())
+        return grid
+
+    # --- NRT fallback for the freshest days --------------------------------
+    if day > date.fromisoformat(latest_nrt_date()):
+        raise SstNotAvailable(f"no SST data for {day.isoformat()} "
+                              f"(final latest: {final_latest}, NRT latest: {latest_nrt_date()})")
+    nrt_path = _nrt_path(day)
+    if nrt_path.exists() and time.time() - nrt_path.stat().st_mtime < NRT_CACHE_TTL:
+        return json.loads(nrt_path.read_text())
+    grid = _parse_grid(_fetch_grid(day, ERDDAP_NRT), day)
+    grid["preliminary"] = True
+    grid["source"] = "NOAA OISST v2.1 NRT (preliminary, ~1-2 day lag)"
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
-    import json
-    path.write_text(json.dumps(grid))
-    logger.info("Cached SST grid for %s (%d points)", day.isoformat(),
-                sum(1 for row in grid["grid"] for v in row if v is not None))
+    nrt_path.write_text(json.dumps(grid))
+    logger.info("Cached SST grid for %s (NRT)", day.isoformat())
     return grid
 
 

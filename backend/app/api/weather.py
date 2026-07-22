@@ -12,6 +12,7 @@ from app.services.sst import (
     cached_dates,
     get_sst,
     latest_available_date,
+    latest_nrt_date,
     precache,
 )
 
@@ -20,8 +21,16 @@ router = APIRouter(prefix="/api/v1/weather", tags=["weather"])
 
 @router.get("/sst/latest")
 def sst_latest() -> dict:
-    """Latest date NOAA has published + which days are already cached."""
-    return {"latest": latest_available_date(), "cached": cached_dates()}
+    """Latest published dates + which days are already cached.
+
+    latest = final product (~2 weeks behind, cached forever).
+    latest_nrt = near-real-time preliminary product (~1-2 days behind).
+    """
+    return {
+        "latest": latest_available_date(),
+        "latest_nrt": latest_nrt_date(),
+        "cached": cached_dates(),
+    }
 
 
 @router.get("/sst")

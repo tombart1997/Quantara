@@ -238,6 +238,7 @@ export interface RippleState {
 
 export interface SstLatest {
   latest: string;
+  latest_nrt: string;
   cached: string[];
 }
 

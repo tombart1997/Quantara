@@ -68,6 +68,7 @@ export class WeatherComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly latest = signal<string | null>(null);
+  protected readonly finalLatest = signal<string | null>(null);
   protected readonly cachedDates = signal<Set<string>>(new Set());
   protected readonly mapReady = signal(false);
   protected readonly loadingInit = signal(true);
@@ -489,9 +490,19 @@ export class WeatherComponent implements OnInit {
   }
 
   private applyLatest(info: SstLatest): void {
-    this.latest.set(info.latest);
+    // The timeline anchors on the NRT (near-real-time, preliminary) latest —
+    // that is the freshest data NOAA publishes, ~1 day back.
+    this.latest.set(info.latest_nrt);
+    this.finalLatest.set(info.latest);
     this.cachedDates.set(new Set(info.cached));
   }
+
+  /** True for dates newer than the final product — shown as NRT/preliminary. */
+  protected readonly isPreliminary = computed(() => {
+    const day = this.displayedDate();
+    const final = this.finalLatest();
+    return !!day && !!final && day > final;
+  });
 
   protected readonly sliderLabel = (value: number): string => this.dateForOffset(944 - value);
 

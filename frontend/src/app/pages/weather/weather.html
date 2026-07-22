@@ -112,9 +112,12 @@
         </div>
         <div class="date-line">
           <span class="selected-date">{{ displayedDate() }}</span>
+          @if (isPreliminary()) {
+            <span class="status preliminary">preliminary · NOAA NRT</span>
+          }
           @if (loadingGrid()) {
             <span class="status downloading">downloading from NOAA…</span>
-          } @else if (cachedDates().has(displayedDate())) {
+          } @else if (cachedDates().has(displayedDate()) || isPreliminary()) {
             <span class="status cached">cached</span>
           } @else {
             <span class="status">not cached</span>
