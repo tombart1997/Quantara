@@ -22,3 +22,6 @@ Thumbs.db
 
 # Local data caches (SST grids etc.) — re-fetched on demand
 backend/data/
+
+# Distribution bundles
+dist-package/

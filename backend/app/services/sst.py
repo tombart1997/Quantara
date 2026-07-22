@@ -159,10 +159,14 @@ def get_sst(day: date) -> dict:
 
 
 def cached_dates() -> list[str]:
-    """Which days are already in the disk cache."""
+    """Which days are in the FINAL-product disk cache (NRT files excluded)."""
     if not CACHE_DIR.exists():
         return []
-    return sorted(p.name[: -len(CACHE_SUFFIX)] for p in CACHE_DIR.glob(f"*{CACHE_SUFFIX}"))
+    return sorted(
+        p.name[: -len(CACHE_SUFFIX)]
+        for p in CACHE_DIR.glob(f"*{CACHE_SUFFIX}")
+        if ".nrt." not in p.name
+    )
 
 
 def download_new_days() -> dict:

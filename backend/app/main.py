@@ -9,9 +9,11 @@ import asyncio
 import threading
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 
 from app.api import ai, assets, backtest, dashboard, events, fx, journal, news, refresh, ripple, signals, temperature, weather
 from app.core.config import get_settings
@@ -69,3 +71,24 @@ app.add_middleware(
 @app.get("/api/health", tags=["meta"])
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+# --- Static frontend (packaged single-process mode) -------------------------
+# Serve the prebuilt Angular app when a build exists: repo dev build, or the
+# `frontend_dist/` folder shipped in the distribution bundle. Registered LAST
+# so API routes always win. Unknown paths fall back to index.html (SPA routing).
+_ROOT = Path(__file__).resolve().parents[2]
+_STATIC_CANDIDATES = [
+    _ROOT / "frontend_dist",                       # distribution bundle
+    _ROOT / "frontend" / "dist" / "frontend" / "browser",  # repo dev build
+]
+_STATIC_DIR = next((p for p in _STATIC_CANDIDATES if p.is_dir()), None)
+
+if _STATIC_DIR is not None:
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    def serve_spa(full_path: str) -> FileResponse:
+        file = _STATIC_DIR / full_path
+        if full_path and file.is_file():
+            return FileResponse(file)
+        return FileResponse(_STATIC_DIR / "index.html")
